@@ -1,0 +1,26 @@
+from fastapi import Request, FastAPI
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi.exceptions import RequestValidationError
+
+def add_exception_handlers(app: FastAPI):
+    @app.exception_handler(SQLAlchemyError)
+    async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal Database Error", "type": str(type(exc).__name__)},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={"detail": "Validation Error", "errors": exc.errors()},
+        )
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "An unexpected error occurred", "type": str(type(exc).__name__)},
+        )

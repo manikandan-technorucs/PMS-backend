@@ -1,0 +1,30 @@
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric
+from sqlalchemy.orm import relationship
+from app.core.database import Base
+from app.models.user import user_team_link
+
+class Team(Base):
+    __tablename__ = "teams"
+    id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(String(50), unique=True, index=True, nullable=False) # TM-XXXX
+    name = Column(String(255), index=True, nullable=False)
+    team_email = Column(String(255), unique=True, index=True, nullable=False)
+    budget_allocation = Column(Numeric(12, 2), default=0.00)
+    description = Column(String(500), nullable=True)
+    team_type = Column(String(50), nullable=True)
+    max_team_size = Column(Integer, nullable=True)
+    primary_communication_channel = Column(String(100), nullable=True)
+    channel_id = Column(String(100), nullable=True)
+    
+    # Foreign Keys
+    lead_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    dept_id = Column(Integer, ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)
+    location_id = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True)
+    
+    # Relationships
+    lead = relationship("User", back_populates="managed_teams", foreign_keys=[lead_id])
+    department = relationship("Department", lazy="joined")
+    location = relationship("Location", lazy="joined")
+    
+    # Many-to-Many
+    members = relationship("User", secondary=user_team_link, back_populates="teams")

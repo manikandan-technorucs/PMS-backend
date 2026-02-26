@@ -1,0 +1,53 @@
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
+from app.core.database import Base
+
+user_team_link = Table(
+    "user_team_link",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("team_id", Integer, ForeignKey("teams.id", ondelete="CASCADE"), primary_key=True),
+)
+
+user_skill_link = Table(
+    "user_skill_link",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("skill_id", Integer, ForeignKey("skills.id", ondelete="CASCADE"), primary_key=True),
+)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    public_id = Column(String(50), unique=True, index=True, nullable=False)
+    employee_id = Column(String(50), unique=True, index=True, nullable=False)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    phone = Column(String(20), nullable=True)
+    job_title = Column(String(100), nullable=True)
+    join_date = Column(Date, default=func.current_date(), nullable=True)
+    
+    # Foreign Keys
+    role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    dept_id = Column(Integer, ForeignKey("departments.id", ondelete="SET NULL"), nullable=True)
+    status_id = Column(Integer, ForeignKey("user_statuses.id", ondelete="SET NULL"), nullable=True)
+    location_id = Column(Integer, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True)
+    manager_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    
+    # Relationships
+    role = relationship("Role", lazy="joined")
+    department = relationship("Department", lazy="joined")
+    status = relationship("UserStatus", lazy="joined")
+    location = relationship("Location", lazy="joined")
+    manager = relationship("User", remote_side=[id])
+    
+    # Many-to-Many
+    teams = relationship("Team", secondary=user_team_link, back_populates="members")
+    skills = relationship("Skill", secondary=user_skill_link, backref="users")
+    
+    # Reverse relationship for teams where this user is admin/lead
+    managed_teams = relationship("Team", back_populates="lead", foreign_keys="Team.lead_id")
