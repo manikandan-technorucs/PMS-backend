@@ -10,7 +10,6 @@ class UserBase(BaseModel):
     username: str
 
 class UserCreate(UserBase):
-    password: str
     employee_id: str
     phone: Optional[str] = None
     job_title: Optional[str] = None
@@ -53,6 +52,10 @@ class UserResponse(UserBase):
     department: Optional[MasterResponse] = None
     status: Optional[MasterResponse] = None
     location: Optional[MasterResponse] = None
+    manager: Optional[UserBase] = None
     skills: List[SkillResponse] = []
 
     model_config = {"from_attributes": True}
+
+class RoleWithUsersResponse(RoleResponse):
+    users: List[UserResponse] = []

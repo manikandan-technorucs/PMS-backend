@@ -2,7 +2,6 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.user import User
 from app.models.masters import Skill
 from app.schemas.user import UserCreate, UserUpdate
-from app.core.security import get_password_hash
 from app.utils.ids import generate_public_id
 
 def get_user(db: Session, user_id: int):
@@ -30,7 +29,6 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     ).offset(skip).limit(limit).all()
 
 def create_user(db: Session, user: UserCreate):
-    hashed_password = get_password_hash(user.password)
     public_id = generate_public_id("USR-")
     
     db_user = User(
@@ -40,7 +38,9 @@ def create_user(db: Session, user: UserCreate):
         last_name=user.last_name,
         email=user.email,
         username=user.username,
-        hashed_password=hashed_password,
+        phone=user.phone,
+        job_title=user.job_title,
+        join_date=user.join_date,
         role_id=user.role_id,
         dept_id=user.dept_id,
         status_id=user.status_id,

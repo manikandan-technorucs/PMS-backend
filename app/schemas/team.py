@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from .masters import MasterResponse
-from .user import UserResponse
+from .user import UserResponse, UserBase
 
 class TeamBase(BaseModel):
     name: str
@@ -17,6 +17,7 @@ class TeamCreate(TeamBase):
     lead_id: Optional[int] = None
     dept_id: Optional[int] = None
     location_id: Optional[int] = None
+    member_ids: Optional[List[int]] = []
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
@@ -30,6 +31,7 @@ class TeamUpdate(BaseModel):
     lead_id: Optional[int] = None
     dept_id: Optional[int] = None
     location_id: Optional[int] = None
+    member_ids: Optional[List[int]] = None
 
 class TeamResponse(TeamBase):
     id: int
@@ -40,7 +42,7 @@ class TeamResponse(TeamBase):
     
     department: Optional[MasterResponse] = None
     location: Optional[MasterResponse] = None
-    # Cannot include lead to avoid deep nesting recursive import directly, but we can do it if desired.
+    lead: Optional[UserBase] = None
     
     model_config = {"from_attributes": True}
 

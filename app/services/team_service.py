@@ -28,9 +28,20 @@ def create_team(db: Session, team: TeamCreate):
         name=team.name,
         team_email=team.team_email,
         budget_allocation=team.budget_allocation,
+        description=team.description,
+        team_type=team.team_type,
+        max_team_size=team.max_team_size,
+        primary_communication_channel=team.primary_communication_channel,
+        channel_id=team.channel_id,
         lead_id=team.lead_id,
-        dept_id=team.dept_id
+        dept_id=team.dept_id,
+        location_id=team.location_id
     )
+    
+    if team.member_ids:
+        members = db.query(User).filter(User.id.in_(team.member_ids)).all()
+        db_team.members = members
+        
     db.add(db_team)
     db.commit()
     db.refresh(db_team)
@@ -42,6 +53,13 @@ def update_team(db: Session, team_id: int, team_update: TeamUpdate):
         return None
         
     update_data = team_update.model_dump(exclude_unset=True)
+    
+    if "member_ids" in update_data:
+        member_ids = update_data.pop("member_ids")
+        if member_ids is not None:
+            members = db.query(User).filter(User.id.in_(member_ids)).all()
+            db_team.members = members
+            
     for key, value in update_data.items():
         setattr(db_team, key, value)
         

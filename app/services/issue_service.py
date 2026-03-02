@@ -1,0 +1,63 @@
+from sqlalchemy.orm import Session, joinedload
+from app.models.issue import Issue
+from app.schemas.issue import IssueCreate, IssueUpdate
+from app.utils.ids import generate_public_id
+
+def get_issue(db: Session, issue_id: int):
+    return db.query(Issue).options(
+        joinedload(Issue.project),
+        joinedload(Issue.reporter),
+        joinedload(Issue.assignee),
+        joinedload(Issue.status),
+        joinedload(Issue.priority)
+    ).filter(Issue.id == issue_id).first()
+
+def get_issues(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(Issue).options(
+        joinedload(Issue.project),
+        joinedload(Issue.reporter),
+        joinedload(Issue.assignee),
+        joinedload(Issue.status),
+        joinedload(Issue.priority)
+    ).offset(skip).limit(limit).all()
+
+def create_issue(db: Session, issue: IssueCreate):
+    public_id = generate_public_id("ISS-")
+    db_issue = Issue(
+        public_id=public_id,
+        title=issue.title,
+        description=issue.description,
+        project_id=issue.project_id,
+        reporter_id=issue.reporter_id,
+        assignee_id=issue.assignee_id,
+        status_id=issue.status_id,
+        priority_id=issue.priority_id,
+        start_date=issue.start_date,
+        end_date=issue.end_date,
+        estimated_hours=issue.estimated_hours
+    )
+    db.add(db_issue)
+    db.commit()
+    db.refresh(db_issue)
+    return get_issue(db, db_issue.id)
+
+def update_issue(db: Session, issue_id: int, issue_update: IssueUpdate):
+    db_issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if not db_issue:
+        return None
+    
+    update_data = issue_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_issue, key, value)
+        
+    db.commit()
+    db.refresh(db_issue)
+    return get_issue(db, db_issue.id)
+
+def delete_issue(db: Session, issue_id: int):
+    db_issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if db_issue:
+        db.delete(db_issue)
+        db.commit()
+        return True
+    return False

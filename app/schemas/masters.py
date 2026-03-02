@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 class MasterBase(BaseModel):
     name: str
@@ -18,7 +18,13 @@ class RoleBase(BaseModel):
     permissions: Dict[str, Any] = {}
 
 class RoleCreate(RoleBase):
-    pass
+    user_ids: Optional[List[int]] = []
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: Optional[Dict[str, Any]] = None
+    user_ids: Optional[List[int]] = None
 
 class RoleResponse(RoleBase):
     id: int

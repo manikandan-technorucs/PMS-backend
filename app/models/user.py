@@ -26,7 +26,6 @@ class User(Base):
     last_name = Column(String(100), nullable=False)
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True, nullable=False)
-    hashed_password = Column(String(255), nullable=False)
     phone = Column(String(20), nullable=True)
     job_title = Column(String(100), nullable=True)
     join_date = Column(Date, default=func.current_date(), nullable=True)
@@ -48,6 +47,7 @@ class User(Base):
     # Many-to-Many
     teams = relationship("Team", secondary=user_team_link, back_populates="members")
     skills = relationship("Skill", secondary=user_skill_link, backref="users")
+    projects = relationship("Project", secondary="project_users", back_populates="users")
     
     # Reverse relationship for teams where this user is admin/lead
     managed_teams = relationship("Team", back_populates="lead", foreign_keys="Team.lead_id")
