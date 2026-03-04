@@ -13,8 +13,8 @@ def create_timelog(timelog: TimeLogCreate, db: Session = Depends(get_db)):
     return timelog_service.create_timelog(db=db, timelog=timelog)
 
 @router.get("/", response_model=List[TimeLogResponse])
-def read_timelogs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return timelog_service.get_timelogs(db, skip=skip, limit=limit)
+def read_timelogs(skip: int = 0, limit: int = 100, project_id: int = None, db: Session = Depends(get_db)):
+    return timelog_service.get_timelogs(db, skip=skip, limit=limit, project_id=project_id)
 
 @router.get("/{timelog_id}", response_model=TimeLogResponse)
 def read_timelog(timelog_id: int, db: Session = Depends(get_db)):

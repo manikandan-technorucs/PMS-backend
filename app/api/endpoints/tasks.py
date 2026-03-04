@@ -13,8 +13,8 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     return task_service.create_task(db=db, task=task)
 
 @router.get("/", response_model=List[TaskResponse])
-def read_tasks(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return task_service.get_tasks(db, skip=skip, limit=limit)
+def read_tasks(skip: int = 0, limit: int = 100, project_id: int = None, db: Session = Depends(get_db)):
+    return task_service.get_tasks(db, skip=skip, limit=limit, project_id=project_id)
 
 @router.get("/{task_id}", response_model=TaskResponse)
 def read_task(task_id: int, db: Session = Depends(get_db)):

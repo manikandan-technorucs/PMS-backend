@@ -13,6 +13,7 @@ class TaskBase(BaseModel):
     end_date: Optional[date] = None
     progress: int = 0
     estimated_hours: Optional[float] = 0.0
+    project: Optional[ProjectBase] = None
 
 class TaskCreate(TaskBase):
     project_id: Optional[int] = None

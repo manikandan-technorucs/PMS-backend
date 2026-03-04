@@ -9,6 +9,8 @@ from app.models.issue import Issue
 from app.models.timelog import TimeLog
 from app.models.milestone import Milestone
 from app.models.task_list import TaskList
+from app.models.timesheet import Timesheet
+from app.models.document import Document
 
 # The order of these imports doesn't heavily matter for sqlalchemy base 
 # as long as they are imported before Base.metadata.create_all is called.

@@ -39,4 +39,5 @@ class Project(Base):
     issues = relationship("Issue", back_populates="project", cascade="all, delete-orphan")
     milestones = relationship("Milestone", back_populates="project", cascade="all, delete-orphan")
     task_lists = relationship("TaskList", back_populates="project", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="project", cascade="all, delete-orphan")
     users = relationship("User", secondary=project_users, back_populates="projects")

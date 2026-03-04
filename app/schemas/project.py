@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import date
 from .masters import MasterResponse
 from .user import UserBase
@@ -47,5 +47,7 @@ class ProjectResponse(ProjectBase):
     priority: Optional[MasterResponse] = None
     department: Optional[MasterResponse] = None
     team: Optional[TeamBase] = None
+    users: List[UserBase] = []
 
     model_config = {"from_attributes": True}
+

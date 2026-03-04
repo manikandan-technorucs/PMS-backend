@@ -13,8 +13,8 @@ def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
     return issue_service.create_issue(db=db, issue=issue)
 
 @router.get("/", response_model=List[IssueResponse])
-def read_issues(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return issue_service.get_issues(db, skip=skip, limit=limit)
+def read_issues(skip: int = 0, limit: int = 100, project_id: int = None, db: Session = Depends(get_db)):
+    return issue_service.get_issues(db, skip=skip, limit=limit, project_id=project_id)
 
 @router.get("/{issue_id}", response_model=IssueResponse)
 def read_issue(issue_id: int, db: Session = Depends(get_db)):

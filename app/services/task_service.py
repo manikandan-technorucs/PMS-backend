@@ -11,13 +11,16 @@ def get_task(db: Session, task_id: int):
         joinedload(Task.priority)
     ).filter(Task.id == task_id).first()
 
-def get_tasks(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Task).options(
+def get_tasks(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+    query = db.query(Task).options(
         joinedload(Task.project),
         joinedload(Task.assignee),
         joinedload(Task.status),
         joinedload(Task.priority)
-    ).offset(skip).limit(limit).all()
+    )
+    if project_id is not None:
+        query = query.filter(Task.project_id == project_id)
+    return query.offset(skip).limit(limit).all()
 
 def create_task(db: Session, task: TaskCreate):
     public_id = generate_public_id("TSK-")

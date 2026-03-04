@@ -12,23 +12,35 @@ class MilestoneBase(BaseModel):
 
 class MilestoneCreate(MilestoneBase):
     project_id: int
-    status_id: Optional[int] = None
+    status_id: int | None = None
+    owner_id: int | None = None
 
 class MilestoneUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    project_id: Optional[int] = None
-    status_id: Optional[int] = None
+    title: str | None = None
+    description: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    project_id: int | None = None
+    status_id: int | None = None
+    owner_id: int | None = None
+
+class MilestoneOwnerResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    
+    class Config:
+        from_attributes = True
 
 class MilestoneResponse(MilestoneBase):
     id: int
     public_id: str
-    project_id: Optional[int] = None
-    status_id: Optional[int] = None
+    project_id: int | None = None
+    status_id: int | None = None
+    owner_id: int | None = None
 
-    project: Optional[ProjectBase] = None
-    status: Optional[MasterResponse] = None
+    project: ProjectBase | None = None
+    status: MasterResponse | None = None
+    owner: MilestoneOwnerResponse | None = None
 
     model_config = {"from_attributes": True}

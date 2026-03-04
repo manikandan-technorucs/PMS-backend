@@ -1,30 +1,38 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
+import datetime
 from .user import UserBase
 from .task import TaskBase
 from .project import ProjectBase
 from .issue import IssueBase
 
 class TimeLogBase(BaseModel):
-    date: date
+    date: datetime.date
     hours: float
     description: Optional[str] = None
+    log_title: Optional[str] = None
+    billing_type: Optional[str] = "Billable"
+    approval_status: Optional[str] = "Pending"
 
 class TimeLogCreate(TimeLogBase):
     user_id: int
     project_id: Optional[int] = None
     task_id: Optional[int] = None
     issue_id: Optional[int] = None
+    timesheet_id: Optional[int] = None
 
 class TimeLogUpdate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[datetime.date] = None
     hours: Optional[float] = None
     description: Optional[str] = None
+    log_title: Optional[str] = None
+    billing_type: Optional[str] = None
+    approval_status: Optional[str] = None
     user_id: Optional[int] = None
     project_id: Optional[int] = None
     task_id: Optional[int] = None
     issue_id: Optional[int] = None
+    timesheet_id: Optional[int] = None
 
 class TimeLogResponse(TimeLogBase):
     id: int

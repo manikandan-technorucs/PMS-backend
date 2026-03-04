@@ -12,6 +12,7 @@ class Milestone(Base):
     
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     status_id = Column(Integer, ForeignKey("statuses.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
@@ -19,3 +20,4 @@ class Milestone(Base):
     # Relationships
     project = relationship("Project", back_populates="milestones")
     status = relationship("Status")
+    owner = relationship("User")

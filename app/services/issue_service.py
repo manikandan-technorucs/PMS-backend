@@ -12,14 +12,17 @@ def get_issue(db: Session, issue_id: int):
         joinedload(Issue.priority)
     ).filter(Issue.id == issue_id).first()
 
-def get_issues(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Issue).options(
+def get_issues(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+    query = db.query(Issue).options(
         joinedload(Issue.project),
         joinedload(Issue.reporter),
         joinedload(Issue.assignee),
         joinedload(Issue.status),
         joinedload(Issue.priority)
-    ).offset(skip).limit(limit).all()
+    )
+    if project_id is not None:
+        query = query.filter(Issue.project_id == project_id)
+    return query.offset(skip).limit(limit).all()
 
 def create_issue(db: Session, issue: IssueCreate):
     public_id = generate_public_id("ISS-")

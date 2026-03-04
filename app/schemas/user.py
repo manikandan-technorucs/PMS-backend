@@ -4,10 +4,12 @@ from datetime import date
 from .masters import RoleResponse, MasterResponse, SkillResponse
 
 class UserBase(BaseModel):
+    id: Optional[int] = None
     first_name: str
     last_name: str
     email: EmailStr
     username: str
+    role: Optional[RoleResponse] = None
 
 class UserCreate(UserBase):
     employee_id: str

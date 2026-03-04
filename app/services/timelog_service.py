@@ -1,22 +1,32 @@
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from app.models.timelog import TimeLog
+from app.models.task import Task
 from app.schemas.timelog import TimeLogCreate, TimeLogUpdate
 
 def get_timelog(db: Session, timelog_id: int):
     return db.query(TimeLog).options(
         joinedload(TimeLog.user),
         joinedload(TimeLog.project),
-        joinedload(TimeLog.task),
+        joinedload(TimeLog.task).joinedload(Task.project),
         joinedload(TimeLog.issue)
     ).filter(TimeLog.id == timelog_id).first()
 
-def get_timelogs(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(TimeLog).options(
+def get_timelogs(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+    query = db.query(TimeLog).options(
         joinedload(TimeLog.user),
         joinedload(TimeLog.project),
-        joinedload(TimeLog.task),
+        joinedload(TimeLog.task).joinedload(Task.project),
         joinedload(TimeLog.issue)
-    ).offset(skip).limit(limit).all()
+    )
+    if project_id is not None:
+        query = query.outerjoin(Task, TimeLog.task_id == Task.id).filter(
+            or_(
+                TimeLog.project_id == project_id,
+                Task.project_id == project_id
+            )
+        )
+    return query.offset(skip).limit(limit).all()
 
 def create_timelog(db: Session, timelog: TimeLogCreate):
     db_timelog = TimeLog(
