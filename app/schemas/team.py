@@ -43,6 +43,7 @@ class TeamResponse(TeamBase):
     department: Optional[MasterResponse] = None
     location: Optional[MasterResponse] = None
     lead: Optional[UserBase] = None
+    members_count: int = 0
     
     model_config = {"from_attributes": True}
 

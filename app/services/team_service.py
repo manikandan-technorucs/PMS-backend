@@ -3,6 +3,7 @@ from app.models.team import Team
 from app.models.user import User
 from app.schemas.team import TeamCreate, TeamUpdate
 from app.utils.ids import generate_public_id
+from app.services.automation_engine import execute_automation_event
 
 def get_team(db: Session, team_id: int):
     return db.query(Team).options(
@@ -83,6 +84,21 @@ def add_team_member(db: Session, team_id: int, user_id: int):
         if db_user not in db_team.members:
             db_team.members.append(db_user)
             db.commit()
+            
+            # Trigger Automations: TEAM_ASSIGNED
+            if db_user.email:
+                payload = {
+                    "team_name": db_team.name,
+                    "team_id": db_team.public_id,
+                    "user_name": f"{db_user.first_name} {db_user.last_name}"
+                }
+                execute_automation_event(
+                    db=db,
+                    event_name="TEAM_ASSIGNED",
+                    payload=payload,
+                    email_recipient=db_user.email,
+                    entity_id=f"{db_team.id}_{db_user.id}"
+                )
             return True
     return False
 

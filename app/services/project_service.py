@@ -3,6 +3,7 @@ from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.utils.ids import generate_public_id
+from app.services.automation_engine import execute_automation_event
 
 def get_project(db: Session, project_id: int):
     return db.query(Project).options(
@@ -43,6 +44,24 @@ def create_project(db: Session, project: ProjectCreate):
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
+
+    # Trigger Automations: PROJECT_CREATED
+    if db_project.manager_id:
+        manager = db.query(User).filter(User.id == db_project.manager_id).first()
+        if manager and manager.email:
+            payload = {
+                "project_id": db_project.public_id,
+                "project_name": db_project.name,
+                "manager_name": f"{manager.first_name} {manager.last_name}"
+            }
+            execute_automation_event(
+                db=db,
+                event_name="PROJECT_CREATED",
+                payload=payload,
+                email_recipient=manager.email,
+                entity_id=str(db_project.id)
+            )
+
     return get_project(db, db_project.id)
 
 def update_project(db: Session, project_id: int, project_update: ProjectUpdate):

@@ -10,3 +10,7 @@ class Role(Base):
     permissions = Column(JSON, default=dict)
     
     users = relationship("User", back_populates="role")
+
+    @property
+    def users_count(self) -> int:
+        return len(self.users)

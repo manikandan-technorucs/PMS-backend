@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.issue import Issue
 from app.schemas.issue import IssueCreate, IssueUpdate
 from app.utils.ids import generate_public_id
+from app.services.automation_engine import execute_automation_event
+from app.models.user import User
 
 def get_issue(db: Session, issue_id: int):
     return db.query(Issue).options(
@@ -42,6 +44,25 @@ def create_issue(db: Session, issue: IssueCreate):
     db.add(db_issue)
     db.commit()
     db.refresh(db_issue)
+
+    # Trigger Automations: ISSUE_CREATED
+    if db_issue.assignee_id:
+        assignee = db.query(User).filter(User.id == db_issue.assignee_id).first()
+        if assignee and assignee.email:
+            payload = {
+                "issue_id": db_issue.public_id,
+                "issue_title": db_issue.title,
+                "project_name": db_issue.project.name if db_issue.project else "Unassigned",
+                "assignee_name": f"{assignee.first_name} {assignee.last_name}"
+            }
+            execute_automation_event(
+                db=db,
+                event_name="ISSUE_CREATED",
+                payload=payload,
+                email_recipient=assignee.email,
+                entity_id=str(db_issue.id)
+            )
+
     return get_issue(db, db_issue.id)
 
 def update_issue(db: Session, issue_id: int, issue_update: IssueUpdate):

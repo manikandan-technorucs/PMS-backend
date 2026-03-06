@@ -28,3 +28,7 @@ class Team(Base):
     
     # Many-to-Many
     members = relationship("User", secondary=user_team_link, back_populates="teams")
+
+    @property
+    def members_count(self) -> int:
+        return len(self.members)

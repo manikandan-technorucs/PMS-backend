@@ -8,6 +8,15 @@ from app.services import user_service
 
 router = APIRouter()
 
+@router.get("/me", response_model=UserResponse)
+def read_user_me(db: Session = Depends(get_db)):
+    # In a real app, this would get the user from the JWT token
+    # For now, we return the first user (usually the admin created during seed)
+    db_user = user_service.get_users(db, limit=1)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="No users found")
+    return db_user[0]
+
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = user_service.get_user_by_email(db, email=user.email)

@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.models.task import Task
 from app.schemas.task import TaskCreate, TaskUpdate
 from app.utils.ids import generate_public_id
+from app.services.automation_engine import execute_automation_event
+from app.models.user import User
 
 def get_task(db: Session, task_id: int):
     return db.query(Task).options(
@@ -42,6 +44,25 @@ def create_task(db: Session, task: TaskCreate):
     db.add(db_task)
     db.commit()
     db.refresh(db_task)
+
+    # Trigger Automations: TASK_ASSIGNED
+    if db_task.assignee_id:
+        assignee = db.query(User).filter(User.id == db_task.assignee_id).first()
+        if assignee and assignee.email:
+            payload = {
+                "task_id": db_task.public_id,
+                "task_title": db_task.title,
+                "project_name": db_task.project.name if db_task.project else "Unassigned",
+                "assignee_name": f"{assignee.first_name} {assignee.last_name}"
+            }
+            execute_automation_event(
+                db=db,
+                event_name="TASK_ASSIGNED",
+                payload=payload,
+                email_recipient=assignee.email,
+                entity_id=str(db_task.id)
+            )
+
     return get_task(db, db_task.id)
 
 def update_task(db: Session, task_id: int, task_update: TaskUpdate):
