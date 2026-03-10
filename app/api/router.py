@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import users, teams, masters, projects, tasks, issues, timelogs, reports, milestones, task_lists, timesheets, documents, automations, email_templates
+from app.api.endpoints import users, teams, masters, projects, tasks, issues, timelogs, reports, milestones, task_lists, timesheets, documents, automations, email_templates, project_groups, search
 
 api_router = APIRouter()
 
@@ -17,3 +17,5 @@ api_router.include_router(timesheets.router, prefix="/timesheets", tags=["timesh
 api_router.include_router(documents.router, prefix="/documents", tags=["documents"])
 api_router.include_router(automations.router, prefix="/automations", tags=["automations"])
 api_router.include_router(email_templates.router, prefix="/email-templates", tags=["email-templates"])
+api_router.include_router(project_groups.router, prefix="/project-groups", tags=["project-groups"])
+api_router.include_router(search.router, prefix="/search", tags=["search"])

@@ -60,6 +60,18 @@ class EmailService:
                 
                 logger.info(f"Email successfully sent via SMTP ({settings.SMTP_HOST})")
                 return True
+            except smtplib.SMTPAuthenticationError as e:
+                error_msg = str(e)
+                if "535" in error_msg:
+                    logger.error(
+                        f"SMTP Authentication Failed (535). "
+                        "This is likely due to MFA being enabled (requires an App Password) "
+                        "or SMTP AUTH being disabled for this account in Microsoft 365. "
+                        f"Details: {error_msg}"
+                    )
+                else:
+                    logger.error(f"SMTP Authentication Error: {error_msg}")
+                raise e
             except Exception as e:
                 logger.error(f"Failed to send email via SMTP: {str(e)}")
                 raise e

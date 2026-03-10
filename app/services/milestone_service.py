@@ -9,13 +9,22 @@ def get_milestone(db: Session, milestone_id: int):
         joinedload(Milestone.status)
     ).filter(Milestone.id == milestone_id).first()
 
-def get_milestones(db: Session, project_id: int = None, skip: int = 0, limit: int = 100):
+def get_milestones(
+    db: Session, 
+    project_id: int = None, 
+    skip: int = 0, 
+    limit: int = 100,
+    status_ids: List[int] = None
+):
     query = db.query(Milestone).options(
         joinedload(Milestone.project),
         joinedload(Milestone.status)
     )
     if project_id:
         query = query.filter(Milestone.project_id == project_id)
+    if status_ids:
+        query = query.filter(Milestone.status_id.in_(status_ids))
+        
     return query.offset(skip).limit(limit).all()
 
 def create_milestone(db: Session, milestone: MilestoneCreate):

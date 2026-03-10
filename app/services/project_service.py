@@ -15,15 +15,34 @@ def get_project(db: Session, project_id: int):
         joinedload(Project.users)
     ).filter(Project.id == project_id).first()
 
-def get_projects(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Project).options(
+def get_projects(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100,
+    status_ids: List[int] = None,
+    priority_ids: List[int] = None,
+    manager_ids: List[int] = None,
+    group_ids: List[int] = None
+):
+    query = db.query(Project).options(
         joinedload(Project.manager),
         joinedload(Project.status),
         joinedload(Project.priority),
         joinedload(Project.department),
         joinedload(Project.team),
         joinedload(Project.users)
-    ).offset(skip).limit(limit).all()
+    )
+    
+    if status_ids:
+        query = query.filter(Project.status_id.in_(status_ids))
+    if priority_ids:
+        query = query.filter(Project.priority_id.in_(priority_ids))
+    if manager_ids:
+        query = query.filter(Project.manager_id.in_(manager_ids))
+    if group_ids:
+        query = query.filter(Project.group_id.in_(group_ids))
+        
+    return query.offset(skip).limit(limit).all()
 
 def create_project(db: Session, project: ProjectCreate):
     public_id = generate_public_id("PRJ-")
@@ -39,7 +58,10 @@ def create_project(db: Session, project: ProjectCreate):
         team_id=project.team_id,
         start_date=project.start_date,
         end_date=project.end_date,
-        estimated_hours=project.estimated_hours
+        estimated_hours=project.estimated_hours,
+        is_template=getattr(project, 'is_template', False),
+        is_archived=getattr(project, 'is_archived', False),
+        group_id=getattr(project, 'group_id', None)
     )
     db.add(db_project)
     db.commit()
@@ -95,6 +117,22 @@ def add_user_to_project(db: Session, project_id: int, user_id: int):
     if db_user not in db_project.users:
         db_project.users.append(db_user)
         db.commit()
+        
+        # Trigger Automations: PROJECT_USER_ASSIGNED
+        if db_user.email:
+            payload = {
+                "project_id": db_project.public_id,
+                "project_name": db_project.name,
+                "user_name": f"{db_user.first_name} {db_user.last_name}",
+                "manager_name": f"{db_project.manager.first_name} {db_project.manager.last_name}" if db_project.manager else "Unassigned"
+            }
+            execute_automation_event(
+                db=db,
+                event_name="PROJECT_USER_ASSIGNED",
+                payload=payload,
+                email_recipient=db_user.email,
+                entity_id=f"{db_project.id}_{db_user.id}"
+            )
     return True
 
 def remove_user_from_project(db: Session, project_id: int, user_id: int):

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -13,8 +13,20 @@ def create_timelog(timelog: TimeLogCreate, db: Session = Depends(get_db)):
     return timelog_service.create_timelog(db=db, timelog=timelog)
 
 @router.get("/", response_model=List[TimeLogResponse])
-def read_timelogs(skip: int = 0, limit: int = 100, project_id: int = None, db: Session = Depends(get_db)):
-    return timelog_service.get_timelogs(db, skip=skip, limit=limit, project_id=project_id)
+def read_timelogs(
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: int = None, 
+    user_id: List[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return timelog_service.get_timelogs(
+        db, 
+        skip=skip, 
+        limit=limit, 
+        project_id=project_id,
+        user_ids=user_id
+    )
 
 @router.get("/{timelog_id}", response_model=TimeLogResponse)
 def read_timelog(timelog_id: int, db: Session = Depends(get_db)):

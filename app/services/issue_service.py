@@ -14,7 +14,15 @@ def get_issue(db: Session, issue_id: int):
         joinedload(Issue.priority)
     ).filter(Issue.id == issue_id).first()
 
-def get_issues(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+def get_issues(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: int = None,
+    status_ids: List[int] = None,
+    priority_ids: List[int] = None,
+    assignee_ids: List[int] = None
+):
     query = db.query(Issue).options(
         joinedload(Issue.project),
         joinedload(Issue.reporter),
@@ -24,6 +32,13 @@ def get_issues(db: Session, skip: int = 0, limit: int = 100, project_id: int = N
     )
     if project_id is not None:
         query = query.filter(Issue.project_id == project_id)
+    if status_ids:
+        query = query.filter(Issue.status_id.in_(status_ids))
+    if priority_ids:
+        query = query.filter(Issue.priority_id.in_(priority_ids))
+    if assignee_ids:
+        query = query.filter(Issue.assignee_id.in_(assignee_ids))
+        
     return query.offset(skip).limit(limit).all()
 
 def create_issue(db: Session, issue: IssueCreate):

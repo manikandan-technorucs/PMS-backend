@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, Date, Boolean
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -29,6 +29,19 @@ class User(Base):
     phone = Column(String(20), nullable=True)
     job_title = Column(String(100), nullable=True)
     join_date = Column(Date, default=func.current_date(), nullable=True)
+    
+    # Profile Details
+    display_name = Column(String(100), nullable=True)
+    gender = Column(String(20), nullable=True)
+    country = Column(String(100), nullable=True)
+    state = Column(String(100), nullable=True)
+    language = Column(String(50), default="English", nullable=True)
+    timezone = Column(String(100), default="Asia/Kolkata", nullable=True)
+    
+    # O365 Sync & External flags
+    o365_id = Column(String(255), unique=True, index=True, nullable=True)
+    is_synced = Column(Boolean, default=False)
+    is_external = Column(Boolean, default=False) # True for Customers
     
     # Foreign Keys
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)

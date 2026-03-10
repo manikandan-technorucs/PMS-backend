@@ -4,6 +4,7 @@ from datetime import date
 from .masters import MasterResponse
 from .user import UserBase
 from .team import TeamBase
+from .project_group import ProjectGroupResponse
 
 class ProjectBase(BaseModel):
     name: str
@@ -12,6 +13,9 @@ class ProjectBase(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     estimated_hours: Optional[float] = 0.0
+    is_template: Optional[bool] = False
+    is_archived: Optional[bool] = False
+    group_id: Optional[int] = None
 
 class ProjectCreate(ProjectBase):
     manager_id: Optional[int] = None
@@ -32,6 +36,9 @@ class ProjectUpdate(BaseModel):
     priority_id: Optional[int] = None
     dept_id: Optional[int] = None
     team_id: Optional[int] = None
+    is_template: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    group_id: Optional[int] = None
 
 class ProjectResponse(ProjectBase):
     id: int
@@ -47,6 +54,7 @@ class ProjectResponse(ProjectBase):
     priority: Optional[MasterResponse] = None
     department: Optional[MasterResponse] = None
     team: Optional[TeamBase] = None
+    group: Optional[ProjectGroupResponse] = None
     users: List[UserBase] = []
 
     model_config = {"from_attributes": True}

@@ -45,7 +45,13 @@ def create_user(db: Session, user: UserCreate):
         dept_id=user.dept_id,
         status_id=user.status_id,
         location_id=user.location_id,
-        manager_id=user.manager_id
+        manager_id=user.manager_id,
+        display_name=user.display_name,
+        gender=user.gender,
+        country=user.country,
+        state=user.state,
+        language=user.language,
+        timezone=user.timezone
     )
     
     if user.skill_ids:

@@ -131,6 +131,12 @@ def seed_data(db: Session):
         "<p>Hi {{ user_name }},</p><p>You have been added to the team <strong>{{ team_name }}</strong> ({{ team_id }}).</p>",
         "Hi {{ user_name }},\n\nYou have been added to the team {{ team_name }} ({{ team_id }})."
     )
+    ensure_template(
+        "Project Assigned",
+        "Assigned to Project: {{ project_name }}",
+        "<p>Hi {{ user_name }},</p><p>You have been assigned to the project <strong>{{ project_name }}</strong> ({{ project_id }}).</p><p>Project Manager: {{ manager_name }}</p>",
+        "Hi {{ user_name }},\n\nYou have been assigned to the project {{ project_name }} ({{ project_id }}).\n\nProject Manager: {{ manager_name }}"
+    )
 
     # Seed Automation Rules if they don't exist for specific events
     def ensure_rule(event_name, template_name):
@@ -144,6 +150,7 @@ def seed_data(db: Session):
     ensure_rule("TASK_ASSIGNED", "New Task Assigned")
     ensure_rule("PROJECT_CREATED", "Project Created")
     ensure_rule("TEAM_ASSIGNED", "Team Joined")
+    ensure_rule("PROJECT_USER_ASSIGNED", "Project Assigned")
     ensure_rule("TIMESHEET_APPROVED", "Timesheet Status Updated")
 
     print("Database seeding completed.")

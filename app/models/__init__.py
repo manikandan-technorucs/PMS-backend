@@ -12,6 +12,7 @@ from app.models.task_list import TaskList
 from app.models.timesheet import Timesheet
 from app.models.document import Document
 from app.models.automation import EmailTemplate, AutomationRule, AutomationLog
+from app.models.project_group import ProjectGroup
 
 # The order of these imports doesn't heavily matter for sqlalchemy base 
 # as long as they are imported before Base.metadata.create_all is called.

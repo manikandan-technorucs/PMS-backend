@@ -12,7 +12,13 @@ def get_timelog(db: Session, timelog_id: int):
         joinedload(TimeLog.issue)
     ).filter(TimeLog.id == timelog_id).first()
 
-def get_timelogs(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+def get_timelogs(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: int = None,
+    user_ids: List[int] = None
+):
     query = db.query(TimeLog).options(
         joinedload(TimeLog.user),
         joinedload(TimeLog.project),
@@ -26,6 +32,9 @@ def get_timelogs(db: Session, skip: int = 0, limit: int = 100, project_id: int =
                 Task.project_id == project_id
             )
         )
+    if user_ids:
+        query = query.filter(TimeLog.user_id.in_(user_ids))
+        
     return query.offset(skip).limit(limit).all()
 
 def create_timelog(db: Session, timelog: TimeLogCreate):

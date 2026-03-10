@@ -8,7 +8,7 @@ from app.api.router import api_router
 from app.utils.exceptions import add_exception_handlers
 from app.models import *  
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)  # Using Alembic migrations now
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -18,18 +18,9 @@ app = FastAPI(
 
 add_exception_handlers(app)
 
-origins = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:3000",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:3000",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

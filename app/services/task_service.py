@@ -13,7 +13,15 @@ def get_task(db: Session, task_id: int):
         joinedload(Task.priority)
     ).filter(Task.id == task_id).first()
 
-def get_tasks(db: Session, skip: int = 0, limit: int = 100, project_id: int = None):
+def get_tasks(
+    db: Session, 
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: int = None,
+    status_ids: List[int] = None,
+    priority_ids: List[int] = None,
+    assignee_ids: List[int] = None
+):
     query = db.query(Task).options(
         joinedload(Task.project),
         joinedload(Task.assignee),
@@ -22,6 +30,13 @@ def get_tasks(db: Session, skip: int = 0, limit: int = 100, project_id: int = No
     )
     if project_id is not None:
         query = query.filter(Task.project_id == project_id)
+    if status_ids:
+        query = query.filter(Task.status_id.in_(status_ids))
+    if priority_ids:
+        query = query.filter(Task.priority_id.in_(priority_ids))
+    if assignee_ids:
+        query = query.filter(Task.assignee_id.in_(assignee_ids))
+        
     return query.offset(skip).limit(limit).all()
 
 def create_task(db: Session, task: TaskCreate):

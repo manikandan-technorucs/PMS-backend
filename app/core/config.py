@@ -1,4 +1,5 @@
-from pydantic import Field
+from typing import Union
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -21,6 +22,21 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="supersecretkey_please_change_in_production")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  
+
+    # CORS
+    BACKEND_CORS_ORIGINS: Union[list[str], str] = Field(default=[])
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, list[str]]) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, str) and v.startswith("["):
+            import json
+            return json.loads(v)
+        elif isinstance(v, list):
+            return v
+        return v
 
     # Async configuration (Redis + Celery)
     REDIS_URL: str = Field(default="redis://localhost:6379/0")

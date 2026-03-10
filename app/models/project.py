@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey, Float, Table
+from sqlalchemy import Column, Integer, String, Date, Text, ForeignKey, Float, Table, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -27,6 +27,11 @@ class Project(Base):
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     estimated_hours = Column(Float, default=0.0)
+    
+    # Zoho Features
+    is_template = Column(Boolean, default=False)
+    is_archived = Column(Boolean, default=False)
+    group_id = Column(Integer, ForeignKey("project_groups.id", ondelete="SET NULL"), nullable=True)
 
     # Relationships
     manager = relationship("User", foreign_keys=[manager_id])
@@ -34,6 +39,7 @@ class Project(Base):
     priority = relationship("Priority")
     department = relationship("Department")
     team = relationship("Team")
+    group = relationship("ProjectGroup", back_populates="projects")
     
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     issues = relationship("Issue", back_populates="project", cascade="all, delete-orphan")

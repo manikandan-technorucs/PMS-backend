@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -12,9 +12,29 @@ router = APIRouter()
 def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     return task_service.create_task(db=db, task=task)
 
+@router.post("/bulk", response_model=List[TaskResponse])
+def bulk_create_tasks(tasks: List[TaskCreate], db: Session = Depends(get_db)):
+    return [task_service.create_task(db=db, task=t) for t in tasks]
+
 @router.get("/", response_model=List[TaskResponse])
-def read_tasks(skip: int = 0, limit: int = 100, project_id: int = None, db: Session = Depends(get_db)):
-    return task_service.get_tasks(db, skip=skip, limit=limit, project_id=project_id)
+def read_tasks(
+    skip: int = 0, 
+    limit: int = 100, 
+    project_id: int = None, 
+    status_id: List[int] = Query(None),
+    priority_id: List[int] = Query(None),
+    assignee_id: List[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return task_service.get_tasks(
+        db, 
+        skip=skip, 
+        limit=limit, 
+        project_id=project_id,
+        status_ids=status_id,
+        priority_ids=priority_id,
+        assignee_ids=assignee_id
+    )
 
 @router.get("/{task_id}", response_model=TaskResponse)
 def read_task(task_id: int, db: Session = Depends(get_db)):

@@ -10,6 +10,14 @@ class UserBase(BaseModel):
     email: EmailStr
     username: str
     role: Optional[RoleResponse] = None
+    is_external: Optional[bool] = False
+    is_synced: Optional[bool] = False
+    display_name: Optional[str] = None
+    gender: Optional[str] = None
+    country: Optional[str] = None
+    state: Optional[str] = None
+    language: Optional[str] = "English"
+    timezone: Optional[str] = "Asia/Kolkata"
 
 class UserCreate(UserBase):
     employee_id: str
@@ -22,6 +30,7 @@ class UserCreate(UserBase):
     location_id: Optional[int] = None
     manager_id: Optional[int] = None
     skill_ids: Optional[List[int]] = []
+    o365_id: Optional[str] = None
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -36,6 +45,9 @@ class UserUpdate(BaseModel):
     location_id: Optional[int] = None
     manager_id: Optional[int] = None
     skill_ids: Optional[List[int]] = None
+    o365_id: Optional[str] = None
+    is_external: Optional[bool] = None
+    is_synced: Optional[bool] = None
 
 class UserResponse(UserBase):
     id: int
@@ -49,6 +61,13 @@ class UserResponse(UserBase):
     status_id: Optional[int] = None
     location_id: Optional[int] = None
     manager_id: Optional[int] = None
+    o365_id: Optional[str] = None
+    display_name: Optional[str] = None
+    gender: Optional[str] = None
+    country: Optional[str] = None
+    state: Optional[str] = None
+    language: Optional[str] = None
+    timezone: Optional[str] = None
 
     role: Optional[RoleResponse] = None
     department: Optional[MasterResponse] = None
