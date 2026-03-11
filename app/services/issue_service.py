@@ -1,3 +1,4 @@
+from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from app.models.issue import Issue
 from app.schemas.issue import IssueCreate, IssueUpdate

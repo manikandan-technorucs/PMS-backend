@@ -1,3 +1,4 @@
+from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from app.models.timelog import TimeLog

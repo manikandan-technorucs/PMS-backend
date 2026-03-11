@@ -24,14 +24,14 @@ def process_automation_rule(self, rule_id: int, payload: dict, to_email: str, id
     """
     db: Session = SessionLocal()
     try:
-        # 1. Idempotency Check: Did we already succeed?
+        
         existing_log = db.query(AutomationLog).filter(AutomationLog.idempotency_key == idempotency_key).first()
         
         if existing_log:
             if existing_log.execution_status == "SUCCESS":
                 logger.info(f"Idempotent task skipped. Key: {idempotency_key}")
                 return "SKIPPED_IDEMPOTENT"
-            # If it failed previously, we will try again and update the log.
+            
             log_entry = existing_log
         else:
             # Create PENDING log
