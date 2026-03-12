@@ -74,3 +74,39 @@ def delete_role(db: Session, role_id: int):
 
 def get_skills(db: Session):
     return db.query(Skill).all()
+
+def search_departments(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(Department).filter(Department.name.ilike(q)).limit(limit).all()
+
+def search_statuses(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(Status).filter(Status.name.ilike(q)).limit(limit).all()
+
+def search_priorities(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(Priority).filter(Priority.name.ilike(q)).limit(limit).all()
+
+def search_user_statuses(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(UserStatus).filter(UserStatus.name.ilike(q)).limit(limit).all()
+
+def search_roles(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(Role).filter(Role.name.ilike(q)).limit(limit).all()
+
+def search_skills(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(Skill).filter(Skill.name.ilike(q)).limit(limit).all()

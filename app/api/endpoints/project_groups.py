@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -11,6 +11,14 @@ router = APIRouter()
 @router.get("/", response_model=List[ProjectGroupResponse])
 def read_project_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return project_group_service.get_project_groups(db, skip=skip, limit=limit)
+
+@router.get("/search", response_model=List[ProjectGroupResponse])
+def search_project_groups(
+    q: str = Query(..., min_length=1),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return project_group_service.search_project_groups(db, query=q, limit=limit)
 
 @router.post("/", response_model=ProjectGroupResponse)
 def create_project_group(group: ProjectGroupCreate, db: Session = Depends(get_db)):

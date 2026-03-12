@@ -16,6 +16,15 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 def bulk_create_tasks(tasks: List[TaskCreate], db: Session = Depends(get_db)):
     return [task_service.create_task(db=db, task=t) for t in tasks]
 
+@router.get("/search", response_model=List[TaskResponse])
+def search_tasks(
+    q: str = Query(..., min_length=1),
+    project_id: int = Query(None),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return task_service.search_tasks(db, query=q, project_id=project_id, limit=limit)
+
 @router.get("/", response_model=List[TaskResponse])
 def read_tasks(
     skip: int = 0, 

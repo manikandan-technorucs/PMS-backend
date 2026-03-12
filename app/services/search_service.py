@@ -63,4 +63,43 @@ class SearchService:
 
         return search_results
 
+    def search_work_items(self, db: Session, query: str, project_id: int = None, limit: int = 20):
+        if not query:
+            return []
+        
+        search_results = []
+        q = f"%{query}%"
+
+        # Base filters
+        task_filters = [or_(Task.title.ilike(q), Task.public_id.ilike(q))]
+        issue_filters = [or_(Issue.title.ilike(q), Issue.public_id.ilike(q))]
+
+        if project_id:
+            task_filters.append(Task.project_id == project_id)
+            issue_filters.append(Issue.project_id == project_id)
+
+        # Search Tasks
+        tasks = db.query(Task).filter(*task_filters).limit(limit).all()
+        for t in tasks:
+            search_results.append({
+                "type": "task",
+                "id": t.id,
+                "public_id": t.public_id,
+                "name": t.title, # Use 'name' for dropdown compatibility
+                "title": t.title
+            })
+
+        # Search Issues
+        issues = db.query(Issue).filter(*issue_filters).limit(limit).all()
+        for i in issues:
+            search_results.append({
+                "type": "issue",
+                "id": i.id,
+                "public_id": i.public_id,
+                "name": f"[Issue] {i.title}", # Prefixing to distinguish
+                "title": i.title
+            })
+
+        return search_results
+
 search_service = SearchService()

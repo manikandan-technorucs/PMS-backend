@@ -101,3 +101,24 @@ def delete_issue(db: Session, issue_id: int):
         db.commit()
         return True
     return False
+
+def search_issues(db: Session, query: str, project_id: int = None, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    from sqlalchemy import or_
+    query_obj = db.query(Issue).options(
+        joinedload(Issue.project),
+        joinedload(Issue.reporter),
+        joinedload(Issue.assignee),
+        joinedload(Issue.status)
+    )
+    if project_id:
+        query_obj = query_obj.filter(Issue.project_id == project_id)
+    
+    return query_obj.filter(
+        or_(
+            Issue.title.ilike(q),
+            Issue.public_id.ilike(q)
+        )
+    ).limit(limit).all()

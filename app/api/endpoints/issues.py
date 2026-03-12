@@ -12,6 +12,15 @@ router = APIRouter()
 def create_issue(issue: IssueCreate, db: Session = Depends(get_db)):
     return issue_service.create_issue(db=db, issue=issue)
 
+@router.get("/search", response_model=List[IssueResponse])
+def search_issues(
+    q: str = Query(..., min_length=1),
+    project_id: int = Query(None),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return issue_service.search_issues(db, query=q, project_id=project_id, limit=limit)
+
 @router.get("/", response_model=List[IssueResponse])
 def read_issues(
     skip: int = 0, 

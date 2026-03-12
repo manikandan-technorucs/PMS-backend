@@ -64,3 +64,7 @@ class User(Base):
     
     # Reverse relationship for teams where this user is admin/lead
     managed_teams = relationship("Team", back_populates="lead", foreign_keys="Team.lead_id")
+
+    @property
+    def name(self):
+        return f"{self.first_name} {self.last_name}"

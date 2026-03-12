@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -14,6 +14,15 @@ def create_task_list(
     db: Session = Depends(get_db)
 ):
     return task_list_service.create_task_list(db=db, task_list=task_list)
+
+@router.get("/search", response_model=List[TaskListResponse])
+def search_task_lists(
+    q: str = Query(..., min_length=1),
+    project_id: int = Query(None),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return task_list_service.search_task_lists(db, query=q, project_id=project_id, limit=limit)
 
 @router.get("/", response_model=List[TaskListResponse])
 def read_task_lists(

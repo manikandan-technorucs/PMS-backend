@@ -12,6 +12,14 @@ router = APIRouter()
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     return project_service.create_project(db=db, project=project)
 
+@router.get("/search", response_model=List[ProjectResponse])
+def search_projects(
+    q: str = Query(..., min_length=1),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return project_service.search_projects(db, query=q, limit=limit)
+
 @router.get("/", response_model=List[ProjectResponse])
 def read_projects(
     skip: int = 0, 

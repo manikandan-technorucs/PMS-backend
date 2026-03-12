@@ -5,6 +5,7 @@ from typing import List
 from app.core.database import get_db
 from app.models.automation import AutomationRule, AutomationLog
 from app.schemas.automation import AutomationRuleCreate, AutomationRuleUpdate, AutomationRuleResponse, AutomationLogResponse
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -50,6 +51,40 @@ def delete_automation(rule_id: int, db: Session = Depends(get_db)):
     db.delete(rule)
     db.commit()
     return None
+
+@router.get("/pending-events", response_model=List[AutomationLogResponse])
+def get_pending_events(limit: int = 50, db: Session = Depends(get_db)):
+    """
+    Returns all PENDING automation events. 
+    Power Automate polls this endpoint to find new events to process.
+    """
+    logs = db.query(AutomationLog).filter(
+        AutomationLog.execution_status == "PENDING"
+    ).order_by(AutomationLog.triggered_at.asc()).limit(limit).all()
+    return logs
+
+@router.put("/logs/{log_id}/complete")
+def mark_event_complete(
+    log_id: int, 
+    success: bool = True, 
+    error: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Called by Power Automate after processing an event (sending email).
+    Marks the log entry as SUCCESS or FAILED.
+    """
+    log_entry = db.query(AutomationLog).filter(AutomationLog.id == log_id).first()
+    if not log_entry:
+        raise HTTPException(status_code=404, detail="Automation log not found")
+    
+    log_entry.execution_status = "SUCCESS" if success else "FAILED"
+    log_entry.completed_at = datetime.now(timezone.utc)
+    if error:
+        log_entry.error_message = error
+    
+    db.commit()
+    return {"message": f"Log {log_id} marked as {log_entry.execution_status}"}
 
 @router.get("/{rule_id}/logs", response_model=List[AutomationLogResponse])
 def get_automation_logs(rule_id: int, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):

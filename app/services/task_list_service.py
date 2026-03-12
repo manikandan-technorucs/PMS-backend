@@ -46,3 +46,13 @@ def delete_task_list(db: Session, task_list_id: int):
         db.commit()
         return True
     return False
+
+def search_task_lists(db: Session, query: str, project_id: int = None, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    from sqlalchemy import or_
+    query_obj = db.query(TaskList).options(joinedload(TaskList.project))
+    if project_id:
+        query_obj = query_obj.filter(TaskList.project_id == project_id)
+    return query_obj.filter(TaskList.name.ilike(q)).limit(limit).all()

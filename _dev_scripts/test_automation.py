@@ -17,7 +17,7 @@ def test_automation():
         email_recipient="test@example.com",
         entity_id="test_task_123"
     )
-    print("Event dispatched. Check Celery logs for processing output.")
+    print("Event logged. Check the database /pending-events API for the result.")
     
 if __name__ == "__main__":
     test_automation()

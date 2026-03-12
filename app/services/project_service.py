@@ -147,3 +147,20 @@ def remove_user_from_project(db: Session, project_id: int, user_id: int):
         db_project.users.remove(db_user)
         db.commit()
     return True
+
+def search_projects(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    from sqlalchemy import or_
+    return db.query(Project).options(
+        joinedload(Project.manager),
+        joinedload(Project.status),
+        joinedload(Project.priority)
+    ).filter(
+        or_(
+            Project.name.ilike(q),
+            Project.public_id.ilike(q),
+            Project.client.ilike(q)
+        )
+    ).limit(limit).all()

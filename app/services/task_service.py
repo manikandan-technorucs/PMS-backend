@@ -101,3 +101,23 @@ def delete_task(db: Session, task_id: int):
         db.commit()
         return True
     return False
+
+def search_tasks(db: Session, query: str, project_id: int = None, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    from sqlalchemy import or_
+    query_obj = db.query(Task).options(
+        joinedload(Task.project),
+        joinedload(Task.assignee),
+        joinedload(Task.status)
+    )
+    if project_id:
+        query_obj = query_obj.filter(Task.project_id == project_id)
+    
+    return query_obj.filter(
+        or_(
+            Task.title.ilike(q),
+            Task.public_id.ilike(q)
+        )
+    ).limit(limit).all()

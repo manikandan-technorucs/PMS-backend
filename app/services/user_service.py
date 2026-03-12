@@ -90,3 +90,22 @@ def delete_user(db: Session, user_id: int):
         db.commit()
         return True
     return False
+
+def search_users(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    from sqlalchemy import or_
+    return db.query(User).options(
+        joinedload(User.role),
+        joinedload(User.department),
+        joinedload(User.status)
+    ).filter(
+        or_(
+            User.first_name.ilike(q),
+            User.last_name.ilike(q),
+            User.email.ilike(q),
+            User.username.ilike(q),
+            User.display_name.ilike(q)
+        )
+    ).limit(limit).all()

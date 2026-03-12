@@ -38,3 +38,9 @@ def delete_project_group(db: Session, group_id: int):
     db.delete(db_group)
     db.commit()
     return True
+
+def search_project_groups(db: Session, query: str, limit: int = 20):
+    if not query:
+        return []
+    q = f"%{query}%"
+    return db.query(ProjectGroup).filter(ProjectGroup.name.ilike(q)).limit(limit).all()

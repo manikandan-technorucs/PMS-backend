@@ -1,14 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, computed_field
 from typing import Optional, List
 from datetime import date
 from .masters import RoleResponse, MasterResponse, SkillResponse
 
 class UserBase(BaseModel):
     id: Optional[int] = None
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: EmailStr
-    username: str
+    username: Optional[str] = None
     role: Optional[RoleResponse] = None
     is_external: Optional[bool] = False
     is_synced: Optional[bool] = False
@@ -18,6 +18,16 @@ class UserBase(BaseModel):
     state: Optional[str] = None
     language: Optional[str] = "English"
     timezone: Optional[str] = "Asia/Kolkata"
+
+    @computed_field
+    @property
+    def name(self) -> str:
+        parts = []
+        if self.first_name:
+            parts.append(self.first_name)
+        if self.last_name:
+            parts.append(self.last_name)
+        return " ".join(parts) if parts else (self.username or self.email.split('@')[0])
 
 class UserCreate(UserBase):
     employee_id: str

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -16,6 +16,14 @@ def read_user_me(db: Session = Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=404, detail="No users found")
     return db_user[0]
+
+@router.get("/search", response_model=List[UserResponse])
+def search_users(
+    q: str = Query(..., min_length=1),
+    limit: int = 20,
+    db: Session = Depends(get_db)
+):
+    return user_service.search_users(db, query=q, limit=limit)
 
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):

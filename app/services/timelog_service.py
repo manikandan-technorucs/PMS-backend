@@ -44,9 +44,13 @@ def create_timelog(db: Session, timelog: TimeLogCreate):
         project_id=timelog.project_id,
         task_id=timelog.task_id,
         issue_id=timelog.issue_id,
+        timesheet_id=timelog.timesheet_id,
         date=timelog.date,
         hours=timelog.hours,
-        description=timelog.description
+        description=timelog.description,
+        log_title=timelog.log_title,
+        billing_type=timelog.billing_type,
+        approval_status=timelog.approval_status
     )
     db.add(db_timelog)
     db.commit()

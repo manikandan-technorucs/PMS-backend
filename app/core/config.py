@@ -38,20 +38,10 @@ class Settings(BaseSettings):
             return v
         return v
 
-    # Async configuration (Redis + Celery)
-    REDIS_URL: str = Field(default="redis://localhost:6379/0")
-    
-    # Email logic
-    EMAIL_PROVIDER: str = Field(default="sendgrid")
-    SENDGRID_API_KEY: str = Field(default="")
-    
-    # SMTP logic (for Outlook/Gmail)
-    SMTP_HOST: str = Field(default="smtp-mail.outlook.com")
-    SMTP_PORT: int = Field(default=587)
-    SMTP_USER: str = Field(default="")
-    SMTP_PASSWORD: str = Field(default="")
-    EMAIL_FROM: str = Field(default="noreply@technorucs.com")
-
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 settings = Settings()

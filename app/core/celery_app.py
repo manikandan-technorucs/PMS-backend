@@ -1,22 +1,9 @@
-from celery import Celery
-from app.core.config import settings
+"""
+Celery App — DEPRECATED
 
-celery_app = Celery(
-    "pms_worker",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL
-)
+Background task processing via Celery/Redis has been removed.
+Automation events are now logged to the database and processed 
+externally by Power Automate.
 
-celery_app.conf.update(
-    task_serializer="json",
-    accept_content=["json"],
-    result_serializer="json",
-    timezone="UTC",
-    enable_utc=True,
-    # Configure retry behavior defaults globally if needed
-    task_acks_late=True,
-    task_reject_on_worker_lost=True
-)
-
-# Optional: Ensure our imports get picked up by the worker
-celery_app.autodiscover_tasks(["app.services"])
+This file is kept as an empty stub to prevent import errors.
+"""
