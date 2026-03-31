@@ -1,0 +1,60 @@
+from typing import Optional, Union
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    PROJECT_NAME: str = "TechnoRUCS PMS"
+    VERSION: str = "1.0.0"
+    API_V1_STR: str = "/api/v1"
+
+    # ── Database ────────────────────────────────────────────────
+    MYSQL_USER: str = Field(alias="DB_USER")
+    MYSQL_PASSWORD: str = Field(alias="DB_PASSWORD")
+    MYSQL_SERVER: str = Field(alias="DB_SERVER", default="localhost")
+    MYSQL_PORT: str = Field(alias="DB_PORT", default="3306")
+    MYSQL_DB: str = Field(alias="DB_NAME")
+
+    @property
+    def DATABASE_URL(self) -> str:
+        import urllib.parse
+        encoded_password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
+        return f"mysql+pymysql://{self.MYSQL_USER}:{encoded_password}@{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+
+    # ── JWT ─────────────────────────────────────────────────────
+    SECRET_KEY: str = Field(alias="SECRET_KEY")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
+
+    # ── CORS ────────────────────────────────────────────────────
+    BACKEND_CORS_ORIGINS: Union[list[str], str] = Field(default=[])
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v: Union[str, list[str]]) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, str) and v.startswith("["):
+            import json
+            return json.loads(v)
+        elif isinstance(v, list):
+            return v
+        return v
+
+    # ── Microsoft Azure SSO ─────────────────────────────────────
+    # Optional — server starts without these; SSO endpoints return 501 until set.
+    AZURE_TENANT_ID: Optional[str] = None
+    AZURE_CLIENT_ID: Optional[str] = None
+    AZURE_CLIENT_SECRET: Optional[str] = None
+
+    # ── Power Automate ──────────────────────────────────────────
+    # Optional — AutomationDispatcher logs a warning and skips if not set.
+    POWER_AUTOMATE_URL: Optional[str] = None
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,   # allow both alias and field name
+    )
+
+settings = Settings()
