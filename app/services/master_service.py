@@ -47,10 +47,8 @@ def update_role(db: Session, role_id: int, role: dict):
             setattr(db_role, key, value)
             
         if user_ids is not None:
-            # Clear existing role assignments
             db.query(User).filter(User.role_id == role_id).update({"role_id": None})
             
-            # Set new assignments
             if user_ids:
                 users_to_update = db.query(User).filter(User.id.in_(user_ids)).all()
                 for user in users_to_update:

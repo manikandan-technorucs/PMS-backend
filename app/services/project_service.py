@@ -33,7 +33,6 @@ def get_projects(
         joinedload(Project.priority)
     )
     
-    # Employee isolation: only show projects they are assigned to
     if current_user is not None:
         query = query.join(pu_table, pu_table.c.project_id == Project.id).filter(
             pu_table.c.user_id == current_user.id
@@ -62,8 +61,8 @@ def create_project(db: Session, project: ProjectCreate, actor_id: str):
         end_date=project.end_date,
         estimated_hours=project.estimated_hours
     )
-    if project.user_ids:
-        users = db.query(User).filter(User.id.in_(project.user_ids)).all()
+    if hasattr(project, 'user_emails') and project.user_emails:
+        users = db.query(User).filter(User.email.in_(project.user_emails)).all()
         db_project.users = users
 
     db.add(db_project)
@@ -93,18 +92,16 @@ def update_project(db: Session, project_id: int, project_update: ProjectUpdate, 
     if not update_data:
         return db_project
 
-    # Logic for previous_status - store the status_id (integer) so data types match
     if "status_id" in update_data and update_data["status_id"] != db_project.status_id:
         update_data["previous_status"] = db_project.status_id  # store old integer FK value
 
-    # Capture diff explicitly BEFORE mutation
     changes = capture_audit_details(db_project, update_data)
 
     for key, value in update_data.items():
         setattr(db_project, key, value)
     
-    if hasattr(project_update, 'user_ids') and project_update.user_ids is not None:
-        users = db.query(User).filter(User.id.in_(project_update.user_ids)).all()
+    if hasattr(project_update, 'user_emails') and project_update.user_emails is not None:
+        users = db.query(User).filter(User.email.in_(project_update.user_emails)).all()
         db_project.users = users
         
     if actor_id:
@@ -126,7 +123,7 @@ def delete_project(db: Session, project_id: int, actor_id: str):
     return False
 
 def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: str, display_name: Optional[str] = None, role_id: Optional[int] = None, actor_id: Optional[str] = None):
-    """Assign a user to a project, implementing JIT provisioning if they don't exist locally."""
+
     from sqlalchemy import insert, select
     from app.models.project import project_users
     from app.models.user import User
@@ -137,16 +134,13 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
     if not db_project:
         return False
 
-    # --- JIT Provisioning (Identity Bridge) ---
     db_user = db.query(User).filter(User.o365_id == user_id).first()
     if not db_user:
-        # Fallback: check by email in case of legacy user missing OID mapping
         db_user = db.query(User).filter(User.email == user_email).first()
         if db_user:
             db_user.o365_id = user_id
             db.commit()
         else:
-            # Create completely new user from MSAL claims
             public_id = generate_public_id("USR-")
             employee_id = generate_public_id("EMP-")
             
@@ -169,7 +163,6 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
             db.commit()
             db.refresh(db_user)
 
-    # Check if already assigned using local Integer ID
     existing = db.execute(
         select(project_users).where(
             project_users.c.project_id == project_id,
@@ -189,10 +182,8 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
         )
     )
 
-    # Always write audit log — fall back to stringified int id if o365_id not set
     effective_actor_id = actor_id or "system"
 
-    # Resolve actor display name
     actor = db.query(User).filter(
         (User.o365_id == actor_id) if actor_id else (User.id == -1)  # no-match if no actor_id
     ).first()
@@ -213,9 +204,7 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
     return True
 
 def remove_user_from_project(db: Session, project_id: int, user_email: str, actor_id: Optional[str] = None):
-    """
-    Remove a user from a project by their email.
-    """
+
     from sqlalchemy import delete as sa_delete
     from app.models.project import project_users
     from app.models.user import User

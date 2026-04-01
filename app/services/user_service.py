@@ -159,7 +159,6 @@ def search_users(db: Session, query: str, limit: int = 20):
         )
     ).limit(limit).all()
 
-
 def upsert_o365_user(
     db: Session,
     o365_id: str,
@@ -168,12 +167,7 @@ def upsert_o365_user(
     last_name: str,
     display_name: Optional[str] = None,
 ) -> User:
-    """
-    Azure Office 365 Upsert:
-    - Find user by o365_id first, then fall back to email match.
-    - If not found: auto-provision with the default 'Employee' role.
-    - Always sync o365_id and mark is_synced=True.
-    """
+
     user = db.query(User).filter(User.o365_id == o365_id).first()
     
     if not user and email:

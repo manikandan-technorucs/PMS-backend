@@ -29,7 +29,6 @@ class Project(AuditMixin, Base):
     description = Column(Text, nullable=True)
     client = Column(String(255), nullable=True)
     
-    # Email-as-Key
     manager_email = Column(String(255), ForeignKey("users.email"), nullable=True)
     created_by_email = Column(String(255), ForeignKey("users.email", ondelete="SET NULL"), nullable=True)
     
@@ -37,21 +36,17 @@ class Project(AuditMixin, Base):
     previous_status = Column(Integer, ForeignKey("statuses.id", ondelete="SET NULL"), nullable=True)
     priority_id = Column(Integer, ForeignKey("priorities.id"), nullable=True)
 
-    # ── Planned / Expected Schedule (required in business logic) ──
     start_date = Column(Date, nullable=True)        # expected_start_date alias
     end_date = Column(Date, nullable=True)          # expected_end_date alias
     estimated_hours = Column(Numeric(10, 2), nullable=True)
 
-    # ── Actual Tracking (populated as work progresses) ──────────
     actual_start_date = Column(Date, nullable=True)
     actual_end_date = Column(Date, nullable=True)
     actual_hours = Column(Numeric(10, 2), nullable=True, default=0)
 
-    # ── Soft Delete / Archiving ──────────────────────────────────
     is_archived = Column(Boolean, default=False, nullable=False)
     is_processed = Column(Boolean, default=False)
 
-    # Relationships — joinedload to prevent N+1
     manager = relationship("User", foreign_keys=[manager_email], lazy="joined")
     creator = relationship("User", foreign_keys=[created_by_email], lazy="joined")
     status = relationship("Status", foreign_keys=[status_id], lazy="joined")

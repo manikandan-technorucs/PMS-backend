@@ -40,7 +40,6 @@ async def upload_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Ensure secure filename and save file
     file_ext = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
@@ -48,10 +47,8 @@ async def upload_document(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    # Calculate file size
     file_size = os.path.getsize(file_path)
     
-    # Create database record
     document_data = DocumentCreate(
         title=title or file.filename,
         description=description,

@@ -18,14 +18,14 @@ def create_task(
     db: Session = Depends(get_db),
     current_user = Depends(allow_team_lead_plus)
 ):
-    """Only Team Lead and above can create tasks."""
+
     if not task.created_by_email:
         task.created_by_email = current_user.email
     return task_service.create_task(db=db, task=task, actor_id=current_user.o365_id or str(current_user.id))
 
 @router.post("/bulk", response_model=List[TaskResponse], dependencies=[Depends(allow_team_lead_plus)])
 def bulk_create_tasks(tasks: List[TaskCreate], db: Session = Depends(get_db), current_user = Depends(allow_team_lead_plus)):
-    """Only Team Lead and above can bulk create tasks."""
+
     return [task_service.create_task(db=db, task=t, actor_id=current_user.o365_id or str(current_user.id)) for t in tasks]
 
 @router.get("/search", response_model=List[TaskResponse])
@@ -49,9 +49,7 @@ def read_tasks(
     db: Session = Depends(get_db),
     current_user = Depends(allow_authenticated)
 ):
-    """
-    Retrieve tasks with total count. Employees only see tasks assigned to them.
-    """
+
     if is_employee_only(current_user):
         assignee_email = [current_user.email]
 
@@ -70,7 +68,6 @@ def read_task(task_id: int, db: Session = Depends(get_db), current_user = Depend
     db_task = task_service.get_task(db, task_id=task_id)
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    # Employee can only view tasks assigned to them
     if is_employee_only(current_user) and db_task.assignee_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you are not assigned to this task.")
     return db_task
@@ -80,7 +77,6 @@ def update_task(task_id: int, task: TaskUpdate, db: Session = Depends(get_db), c
     db_task = task_service.get_task(db, task_id=task_id)
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    # Employee can only update tasks assigned to them
     if is_employee_only(current_user) and db_task.assignee_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only update tasks assigned to you.")
     
@@ -91,7 +87,7 @@ def update_task(task_id: int, task: TaskUpdate, db: Session = Depends(get_db), c
 
 @router.delete("/{task_id}", dependencies=[Depends(allow_team_lead_plus)])
 def delete_task(task_id: int, db: Session = Depends(get_db), current_user = Depends(allow_team_lead_plus)):
-    """Only Team Lead and above can delete tasks."""
+
     success = task_service.delete_task(db, task_id=task_id, actor_id=current_user.o365_id or str(current_user.id))
     if not success:
         raise HTTPException(status_code=404, detail="Task not found")

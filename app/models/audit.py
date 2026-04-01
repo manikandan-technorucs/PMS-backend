@@ -1,12 +1,3 @@
-"""
-Audit Logging Schema
-
-Models strictly mapped to the provided SQL Server schema:
-- AuditFieldsMapping
-- AuditLogDetails
-- AuditLogs
-- AuditMetaDataInfo
-"""
 
 from datetime import datetime
 from typing import List, Optional
@@ -18,7 +9,6 @@ from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 
 from app.core.database import Base
 
-
 class AuditFieldsMapping(Base):
     __tablename__ = "AuditFieldsMapping"
 
@@ -29,7 +19,6 @@ class AuditFieldsMapping(Base):
     IsActive: Mapped[bool] = mapped_column(Boolean, nullable=False)
     IsVisible: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     OrderNo: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
 
 class AuditLogs(Base):
     __tablename__ = "AuditLogs"
@@ -50,7 +39,6 @@ class AuditLogs(Base):
         lazy="selectin",
     )
 
-
 class AuditLogDetails(Base):
     __tablename__ = "AuditLogDetails"
 
@@ -62,7 +50,6 @@ class AuditLogDetails(Base):
     ValueType: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     audit_log: Mapped["AuditLogs"] = relationship(back_populates="details")
-
 
 class AuditMetaDataInfo(Base):
     __tablename__ = "AuditMetaDataInfo"

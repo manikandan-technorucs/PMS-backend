@@ -18,9 +18,6 @@ from app.services.user_service import upsert_o365_user
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────
-# Helper: build TokenResponse from a User ORM object
-# ─────────────────────────────────────────────
 def _build_token_response(user: User) -> TokenResponse:
     access_token = create_access_token(
         subject=user.id,
@@ -41,20 +38,15 @@ def _build_token_response(user: User) -> TokenResponse:
         is_synced=user.is_synced,
     )
 
-
-# ─────────────────────────────────────────────
-# POST /auth/redirect — Microsoft OAuth2 Code Exchange
-# ─────────────────────────────────────────────
 @router.post("/redirect", response_model=TokenResponse)
 async def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_db)):
-    """Exchange an MS authorization code for a JWT. Auto-provisions users."""
+
     if not all([settings.AZURE_TENANT_ID, settings.AZURE_CLIENT_ID, settings.AZURE_CLIENT_SECRET]):
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Microsoft SSO is not configured on this server.",
         )
 
-    # Exchange the authorization code for Azure tokens
     token_url = f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/token"
     try:
         async with httpx.AsyncClient() as client:
@@ -83,7 +75,6 @@ async def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_db))
         logger.error(f"MS token exchange network error: {exc}")
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to reach Microsoft.")
 
-    # Fetch user profile from MS Graph
     try:
         async with httpx.AsyncClient() as client:
             graph_resp = await client.get(
@@ -97,7 +88,6 @@ async def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_db))
         logger.error(f"MS Graph fetch failed: {exc}")
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to fetch profile from Microsoft.")
 
-    # Upsert the user
     user = upsert_o365_user(
         db=db,
         o365_id=ms_user.get("id"),
@@ -112,15 +102,11 @@ async def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_db))
 
     return _build_token_response(user)
 
-
-# ─────────────────────────────────────────────
-# GET /auth/me — Returns current user from JWT
-# ─────────────────────────────────────────────
 @router.get("/me")
 def get_current_user_profile(
     current_user: User = Depends(get_current_user),
 ):
-    """Returns the profile of the currently authenticated user."""
+
     return {
         "id": current_user.id,
         "public_id": current_user.public_id,

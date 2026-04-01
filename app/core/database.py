@@ -24,26 +24,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-
 class AuditMixin:
-    """
-    Mixin that adds enterprise-grade audit columns to any SQLAlchemy model.
-
-    Provides:
-      - created_at  : automatically set on INSERT
-      - updated_at  : automatically set on UPDATE
-      - is_active   : logical active/inactive toggle (default True)
-      - is_deleted  : soft-delete flag (default False)
-
-    Usage:
-        class MyModel(AuditMixin, Base):
-            ...
-    """
     created_at = Column(DateTime(timezone=True), default=func.now(), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=None, onupdate=func.now(), nullable=True)
     is_active   = Column(Boolean, default=True,  nullable=False)
     is_deleted  = Column(Boolean, default=False, nullable=False)
-
 
 def get_db():
     

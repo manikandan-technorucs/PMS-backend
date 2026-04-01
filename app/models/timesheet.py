@@ -15,7 +15,6 @@ class Timesheet(AuditMixin, Base):
     total_hours = Column(Numeric(5, 2), default=0.0)
     approval_status = Column(String(50), default="Pending")
 
-    # Relationships
     project = relationship("Project")
     user = relationship("User", foreign_keys=[user_email])
     timelogs = relationship("TimeLog", back_populates="timesheet")

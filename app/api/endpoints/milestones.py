@@ -10,25 +10,19 @@ from app.services import milestone_service
 
 router = APIRouter(dependencies=[Depends(allow_authenticated)])
 
-
 @router.post("/", response_model=MilestoneResponse)
 def create_milestone(
     milestone: MilestoneCreate,
     db: Session = Depends(get_db),
     current_user=Depends(allow_authenticated),
 ):
-    """
-    All authenticated users can create milestones.
-    - `owner_id` is automatically populated from the authenticated user's JWT
-      via `auto_populate_milestone()` if not provided by the client.
-    """
+
     auto_populate_milestone(milestone, current_user)
     return milestone_service.create_milestone(
         db=db,
         milestone=milestone,
         actor_id=current_user.o365_id or str(current_user.id),
     )
-
 
 @router.get("/", response_model=List[MilestoneResponse])
 def read_milestones(
@@ -46,7 +40,6 @@ def read_milestones(
         status_ids=status_id,
     )
 
-
 @router.get("/{milestone_id}", response_model=MilestoneResponse)
 def read_milestone(
     milestone_id: int,
@@ -56,7 +49,6 @@ def read_milestone(
     if db_milestone is None:
         raise HTTPException(status_code=404, detail="Milestone not found")
     return db_milestone
-
 
 @router.put("/{milestone_id}", response_model=MilestoneResponse)
 def update_milestone(
@@ -75,14 +67,13 @@ def update_milestone(
         raise HTTPException(status_code=404, detail="Milestone not found")
     return updated
 
-
 @router.delete("/{milestone_id}")
 def delete_milestone(
     milestone_id: int,
     db: Session = Depends(get_db),
     current_user=Depends(allow_team_lead_plus),
 ):
-    """Team Lead and above can delete milestones."""
+
     success = milestone_service.delete_milestone(
         db,
         milestone_id=milestone_id,

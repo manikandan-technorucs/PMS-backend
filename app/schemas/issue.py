@@ -6,7 +6,6 @@ from .user import UserBase
 from .project import ProjectBase
 from .document import DocumentResponse
 
-# ── Zoho-compatible Enums ────────────────────────────────────────────────────
 IssueClassification = Literal[
     "None", "Security", "Crash/Hang", "Data Loss", "Performance",
     "UI/UX Usability", "Other Bugs", "Feature (New)", "Enhancement"
@@ -15,7 +14,6 @@ IssueClassification = Literal[
 IssueStatus = Literal[
     "Open", "In Progress", "In Review", "To Be Tested", "Re-opened", "Closed"
 ]
-
 
 class IssueBase(BaseModel):
     title: str
@@ -28,9 +26,7 @@ class IssueBase(BaseModel):
     module: Optional[str] = None
     tags: Optional[str] = None
 
-    # ── Zoho Classification ──────────────────────────────────────
     classification: Optional[IssueClassification] = "None"
-
 
 class IssueCreate(IssueBase):
     project_id: Optional[int] = None
@@ -48,7 +44,6 @@ class IssueCreate(IssueBase):
         if not v or not v.strip():
             raise ValueError("Issue title must not be empty")
         return v.strip()
-
 
 class IssueUpdate(BaseModel):
     title: Optional[str] = None
@@ -69,7 +64,6 @@ class IssueUpdate(BaseModel):
     tags: Optional[str] = None
     document_ids: Optional[List[int]] = []
 
-
 class IssueResponse(IssueBase):
     id: int
     public_id: str
@@ -89,7 +83,6 @@ class IssueResponse(IssueBase):
     documents: Optional[List[DocumentResponse]] = []
 
     model_config = {"from_attributes": True}
-
 
 class IssueListResponse(BaseModel):
     total: int

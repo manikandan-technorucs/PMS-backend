@@ -28,10 +28,8 @@ class Document(AuditMixin, Base):
     
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
     
-    # Email-as-Key
     uploaded_by_email = Column(String(255), ForeignKey("users.email", ondelete="SET NULL"), nullable=True)
 
-    # Relationships
     project = relationship("Project", back_populates="documents")
     uploaded_by = relationship("User", foreign_keys=[uploaded_by_email])
     issues = relationship("Issue", secondary=issue_document_link, back_populates="documents")

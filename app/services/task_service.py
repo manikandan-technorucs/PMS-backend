@@ -92,7 +92,6 @@ def update_task(db: Session, task_id: int, task_update: TaskUpdate, actor_id: Op
     if not db_task:
         return None
     
-    # Exclude M2M ID lists from the setattr loop — those are handled separately below
     update_data = task_update.model_dump(exclude_unset=True, exclude={'owner_ids', 'assignee_ids'})
     changes = capture_audit_details(db_task, update_data)
 

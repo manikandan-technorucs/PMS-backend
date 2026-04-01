@@ -10,6 +10,5 @@ class TaskList(AuditMixin, Base):
     name = Column(String(255), index=True, nullable=False)
     description = Column(Text, nullable=True)
 
-    # Relationships
     project = relationship("Project", back_populates="task_lists")
     tasks = relationship("Task", back_populates="task_list", cascade="all, delete-orphan")

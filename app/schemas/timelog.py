@@ -20,7 +20,9 @@ class TimeLogCreate(TimeLogBase):
     project_id: Optional[int] = None
     task_id: Optional[int] = None
     issue_id: Optional[int] = None
-    timesheet_id: Optional[int] = None
+
+class TimeLogBulkCreate(BaseModel):
+    logs: list[TimeLogCreate]
 
 class TimeLogUpdate(BaseModel):
     date: Optional[datetime.date] = None
@@ -34,7 +36,6 @@ class TimeLogUpdate(BaseModel):
     project_id: Optional[int] = None
     task_id: Optional[int] = None
     issue_id: Optional[int] = None
-    timesheet_id: Optional[int] = None
 
 class TimeLogResponse(TimeLogBase):
     id: int

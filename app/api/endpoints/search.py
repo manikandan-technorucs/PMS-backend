@@ -13,9 +13,7 @@ def global_search(
     q: str = Query(..., min_length=1),
     limit: int = Query(15, gt=0, le=50)
 ) -> Any:
-    """
-    Search across projects, tasks, and issues.
-    """
+
     return search_service.global_search(db, query=q, limit=limit)
 
 @router.get("/work-items", response_model=List[Any])
@@ -25,7 +23,5 @@ def search_work_items(
     project_id: int = Query(None),
     limit: int = Query(15, gt=0, le=50)
 ) -> Any:
-    """
-    Search across tasks and issues for a specific project.
-    """
+
     return search_service.search_work_items(db, query=q, project_id=project_id, limit=limit)

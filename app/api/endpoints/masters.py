@@ -10,7 +10,6 @@ from app.services import master_service
 
 router = APIRouter(dependencies=[Depends(allow_authenticated)])
 
-
 @router.get("/user-statuses", response_model=List[MasterResponse])
 def read_user_statuses(db: Session = Depends(get_db)):
     return master_service.get_user_statuses(db)
@@ -66,7 +65,7 @@ def delete_role(role_id: int, db: Session = Depends(get_db)):
 
 @router.post("/roles/{role_id}/users/{user_email}")
 def assign_user_to_role(role_id: int, user_email: str, db: Session = Depends(get_db)):
-    """Assign a user (by email) to a role."""
+
     from app.models.user import User
     from app.models.roles import Role
     db_role = db.query(Role).filter(Role.id == role_id).first()
@@ -81,7 +80,7 @@ def assign_user_to_role(role_id: int, user_email: str, db: Session = Depends(get
 
 @router.delete("/roles/{role_id}/users/{user_email}")
 def remove_user_from_role(role_id: int, user_email: str, db: Session = Depends(get_db)):
-    """Remove a user (by email) from a role."""
+
     from app.models.user import User
     user = db.query(User).filter(User.email == user_email, User.role_id == role_id).first()
     if not user:
@@ -91,18 +90,18 @@ def remove_user_from_role(role_id: int, user_email: str, db: Session = Depends(g
     return {"message": "User removed from role successfully"}
 
 @router.post("/roles/{role_id}/users/bulk")
-def bulk_assign_users_to_role(role_id: int, user_ids: List[int], db: Session = Depends(get_db)):
-    """Assign multiple users to a role."""
+def bulk_assign_users_to_role(role_id: int, user_emails: List[str], db: Session = Depends(get_db)):
+
     from app.models.user import User
     from app.models.roles import Role
     db_role = db.query(Role).filter(Role.id == role_id).first()
     if not db_role:
         raise HTTPException(status_code=404, detail="Role not found")
     
-    # Update bulk
-    db.query(User).filter(User.id.in_(user_ids)).update({"role_id": role_id}, synchronize_session=False)
-    db.commit()
-    return {"message": f"{len(user_ids)} users assigned to role successfully"}
+    if user_emails:
+        db.query(User).filter(User.email.in_(user_emails)).update({"role_id": role_id}, synchronize_session=False)
+        db.commit()
+    return {"message": f"Users assigned to role successfully"}
 
 @router.get("/skills", response_model=List[SkillResponse])
 def read_skills(db: Session = Depends(get_db)):

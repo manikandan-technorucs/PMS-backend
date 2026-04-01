@@ -48,7 +48,6 @@ def create_timelog(db: Session, timelog: TimeLogCreate, actor_id: Optional[str] 
         project_id=timelog.project_id,
         task_id=timelog.task_id,
         issue_id=timelog.issue_id,
-        timesheet_id=timelog.timesheet_id,
         date=timelog.date,
         hours=timelog.hours,
         description=timelog.description,
@@ -104,3 +103,42 @@ def delete_timelog(db: Session, timelog_id: int, actor_id: Optional[str] = None)
         db.commit()
         return True
     return False
+
+def create_timelogs_bulk(db: Session, timelogs: list[TimeLogCreate], actor_id: Optional[str] = None):
+    db_logs = []
+    for log in timelogs:
+        if log.hours <= 0:
+            continue
+            
+        db_log = TimeLog(
+            user_email=log.user_email,
+            project_id=log.project_id,
+            task_id=log.task_id,
+            issue_id=log.issue_id,
+            date=log.date,
+            hours=log.hours,
+            description=log.description,
+            log_title=log.log_title,
+            billing_type=log.billing_type,
+            approval_status=log.approval_status,
+            general_log=log.general_log
+        )
+        db_logs.append(db_log)
+        db.add(db_log)
+        
+    db.flush()
+    db.commit()
+    for db_log in db_logs:
+        db.refresh(db_log)
+        
+    if actor_id and db_logs:
+        write_audit(db, actor_id, "CREATE", "timelogs",
+                    resource_id=db_logs[0].project_id or db_logs[0].id,
+                    record_id=db_logs[0].id,
+                    details=[{
+                        "field_name": "bulk_create",
+                        "old_value": None,
+                        "new_value": f"Bulk created {len(db_logs)} time logs"
+                    }])
+                    
+    return db_logs

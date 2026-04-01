@@ -11,7 +11,7 @@ router = APIRouter(dependencies=[Depends(allow_authenticated)])
 
 @router.post("/", response_model=TimesheetResponse)
 def create_timesheet(timesheet: TimesheetCreate, db: Session = Depends(get_db), current_user = Depends(allow_authenticated)):
-    """All roles can create timesheets. Employees only for themselves."""
+
     if is_employee_only(current_user):
         timesheet.user_email = current_user.email
     return timesheet_service.create_timesheet(db=db, timesheet=timesheet, actor_id=current_user.o365_id or str(current_user.id))
@@ -25,7 +25,7 @@ def read_timesheets(
     db: Session = Depends(get_db),
     current_user = Depends(allow_authenticated)
 ):
-    """Employees only see their own timesheets."""
+
     if is_employee_only(current_user):
         user_email = current_user.email
     return timesheet_service.get_timesheets(db, skip=skip, limit=limit, project_id=project_id, user_email=user_email)
@@ -35,7 +35,6 @@ def read_timesheet(timesheet_id: int, db: Session = Depends(get_db), current_use
     db_timesheet = timesheet_service.get_timesheet(db, timesheet_id=timesheet_id)
     if db_timesheet is None:
         raise HTTPException(status_code=404, detail="Timesheet not found")
-    # Employee can only view their own timesheets
     if is_employee_only(current_user) and db_timesheet.user_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only view your own timesheets.")
     return db_timesheet
@@ -45,7 +44,6 @@ def update_timesheet(timesheet_id: int, timesheet: TimesheetUpdate, db: Session 
     db_timesheet = timesheet_service.get_timesheet(db, timesheet_id=timesheet_id)
     if db_timesheet is None:
         raise HTTPException(status_code=404, detail="Timesheet not found")
-    # Employee can only update their own timesheets
     if is_employee_only(current_user) and db_timesheet.user_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only update your own timesheets.")
     
@@ -56,7 +54,7 @@ def update_timesheet(timesheet_id: int, timesheet: TimesheetUpdate, db: Session 
 
 @router.delete("/{timesheet_id}", dependencies=[Depends(allow_team_lead_plus)])
 def delete_timesheet(timesheet_id: int, db: Session = Depends(get_db), current_user = Depends(allow_team_lead_plus)):
-    """Only Team Lead and above can delete timesheets."""
+
     success = timesheet_service.delete_timesheet(db, timesheet_id=timesheet_id, actor_id=current_user.o365_id or str(current_user.id))
     if not success:
         raise HTTPException(status_code=404, detail="Timesheet not found")

@@ -18,7 +18,6 @@ router = APIRouter(dependencies=[Depends(allow_authenticated)])
 @router.get("/summary")
 def get_report_summary(db: Session = Depends(get_db)):
     total_projects = db.query(Project).count()
-    # Explicit join to resolve ambiguous FK (Project has status_id AND previous_status -> statuses)
     active_projects = db.query(Project).join(
         Status, Project.status_id == Status.id
     ).filter(Status.name.notin_(["Completed", "Closed"])).count()
@@ -49,7 +48,7 @@ def get_report_summary(db: Session = Depends(get_db)):
 
 @router.get("/project/{project_id}")
 def get_project_report(project_id: int, db: Session = Depends(get_db)):
-    """Per-project summary: task/issue/milestone counts and hours."""
+
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
         return {"error": "Project not found"}
@@ -72,7 +71,7 @@ def get_project_report(project_id: int, db: Session = Depends(get_db)):
 
 @router.get("/export/csv")
 def export_csv_report(report_type: str = "projects", db: Session = Depends(get_db)):
-    """Export data as CSV. report_type: projects, tasks, issues, timelogs"""
+
     output = io.StringIO()
     writer = csv.writer(output)
 

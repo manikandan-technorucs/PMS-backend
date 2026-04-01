@@ -5,30 +5,25 @@ from .masters import MasterResponse
 from .user import UserBase
 from .project import ProjectBase
 
-# ── Zoho-compatible Task Status Enum ────────────────────────────────────────
 TASK_STATUS_CHOICES = [
     "Open", "In Progress", "In Review", "To Be Tested", "Completed", "On Hold", "Closed"
 ]
-
 
 class TaskBase(BaseModel):
     title: str
     description: Optional[str] = None
     due_date: Optional[date] = None
 
-    # Expected schedule (maps to DB start_date / end_date)
     start_date: Optional[date] = None
     end_date: Optional[date] = None
 
     progress: int = 0
 
-    # Hours tracking
     estimated_hours: Optional[float] = 0.0
     actual_hours: Optional[float] = 0.0
     billing_type: Optional[str] = "Billable"
 
     project: Optional[ProjectBase] = None
-
 
 class TaskCreate(TaskBase):
     project_id: Optional[int] = None
@@ -47,7 +42,6 @@ class TaskCreate(TaskBase):
             raise ValueError("Task title must not be empty")
         return v.strip()
 
-
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -64,7 +58,6 @@ class TaskUpdate(BaseModel):
     owner_ids: Optional[List[int]] = None
     status_id: Optional[int] = None
     priority_id: Optional[int] = None
-
 
 class TaskResponse(TaskBase):
     id: int
@@ -83,7 +76,6 @@ class TaskResponse(TaskBase):
     priority: Optional[MasterResponse] = None
 
     model_config = {"from_attributes": True}
-
 
 class TaskListResponse(BaseModel):
     total: int

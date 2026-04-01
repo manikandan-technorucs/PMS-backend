@@ -12,7 +12,6 @@ class SearchService:
         search_results = []
         q = f"%{query}%"
 
-        # Search Projects
         projects = db.query(Project).filter(
             or_(
                 Project.name.ilike(q),
@@ -29,7 +28,6 @@ class SearchService:
                 "path": f"/projects/{p.id}"
             })
 
-        # Search Tasks
         tasks = db.query(Task).filter(
             or_(
                 Task.title.ilike(q),
@@ -45,7 +43,6 @@ class SearchService:
                 "path": f"/tasks/{t.id}"
             })
 
-        # Search Issues
         issues = db.query(Issue).filter(
             or_(
                 Issue.title.ilike(q),
@@ -70,7 +67,6 @@ class SearchService:
         search_results = []
         q = f"%{query}%"
 
-        # Base filters
         task_filters = [or_(Task.title.ilike(q), Task.public_id.ilike(q))]
         issue_filters = [or_(Issue.title.ilike(q), Issue.public_id.ilike(q))]
 
@@ -78,7 +74,6 @@ class SearchService:
             task_filters.append(Task.project_id == project_id)
             issue_filters.append(Issue.project_id == project_id)
 
-        # Search Tasks
         tasks = db.query(Task).filter(*task_filters).limit(limit).all()
         for t in tasks:
             search_results.append({
@@ -89,7 +84,6 @@ class SearchService:
                 "title": t.title
             })
 
-        # Search Issues
         issues = db.query(Issue).filter(*issue_filters).limit(limit).all()
         for i in issues:
             search_results.append({

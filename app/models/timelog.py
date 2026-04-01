@@ -15,7 +15,6 @@ class TimeLog(AuditMixin, Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
     task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True)
     issue_id = Column(Integer, ForeignKey("issues.id"), nullable=True)
-    timesheet_id = Column(Integer, ForeignKey("timesheets.id", name="fk_timelog_timesheet"), nullable=True)
     
     date = Column(Date, nullable=False)
     hours = Column(Numeric(5, 2), nullable=False)
@@ -26,9 +25,7 @@ class TimeLog(AuditMixin, Base):
     approval_status = Column(String(50), default="Pending")
     general_log = Column(Boolean, default=False)
 
-    # Relationships
     user = relationship("User", foreign_keys=[user_email])
     project = relationship("Project")
     task = relationship("Task", back_populates="timelogs")
     issue = relationship("Issue")
-    timesheet = relationship("Timesheet", back_populates="timelogs")

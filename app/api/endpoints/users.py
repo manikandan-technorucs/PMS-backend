@@ -20,12 +20,12 @@ def search_users(
     limit: int = 20,
     db: Session = Depends(get_db)
 ):
-    """Authenticated users can search users for dropdowns."""
+
     return user_service.search_users(db, query=q, limit=limit)
 
 @router.post("/", response_model=UserResponse, dependencies=[Depends(allow_pm)])
 def create_user(user: UserCreate, db: Session = Depends(get_db), current_user = Depends(allow_pm)):
-    """Only Admin and Project Manager can create users."""
+
     db_user = user_service.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -51,7 +51,7 @@ def read_users(
     dept_id: List[int] = Query(None),
     db: Session = Depends(get_db)
 ):
-    """Authenticated users can list users for dropdowns."""
+
     return user_service.get_users(
         db, 
         skip=skip, 
@@ -63,7 +63,7 @@ def read_users(
 
 @router.get("/{user_id}", response_model=UserResponse)
 def read_user(user_id: int, db: Session = Depends(get_db), current_user = Depends(allow_authenticated)):
-    """Anyone can view a user profile (for display purposes)."""
+
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -71,7 +71,7 @@ def read_user(user_id: int, db: Session = Depends(get_db), current_user = Depend
 
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), current_user = Depends(allow_authenticated)):
-    """Admin/PM can update any user. Employees can only update themselves."""
+
     if is_employee_only(current_user) and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Access denied: you can only update your own profile.")
     
@@ -82,7 +82,7 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
 
 @router.delete("/{user_id}", dependencies=[Depends(allow_pm)])
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user = Depends(allow_pm)):
-    """Only Admin and Project Manager can delete users."""
+
     success = user_service.delete_user(db, user_id=user_id, actor_id=current_user.o365_id or str(current_user.id))
     if not success:
         raise HTTPException(status_code=404, detail="User not found")

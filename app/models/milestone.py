@@ -21,7 +21,6 @@ class Milestone(AuditMixin, Base):
     end_date = Column(Date, nullable=True)
     is_processed = Column(Boolean, default=False)
 
-    # Relationships
     project = relationship("Project", back_populates="milestones")
     status = relationship("Status")
     owner = relationship("User", foreign_keys=[owner_email])
