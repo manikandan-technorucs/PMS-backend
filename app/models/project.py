@@ -45,6 +45,8 @@ class Project(AuditMixin, Base):
     actual_hours = Column(Numeric(10, 2), nullable=True, default=0)
 
     is_archived = Column(Boolean, default=False, nullable=False)
+    is_template = Column(Boolean, default=False, nullable=False)
+    is_group = Column(Boolean, default=False, nullable=False)
     is_processed = Column(Boolean, default=False)
 
     manager = relationship("User", foreign_keys=[manager_email], lazy="joined")

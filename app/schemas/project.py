@@ -24,6 +24,8 @@ class ProjectCreate(ProjectBase):
     status_id: Optional[int] = None
     priority_id: Optional[int] = None
     is_archived: bool = False
+    is_template: bool = False
+    is_group: bool = False
     user_emails: Optional[List[str]] = []
 
     @field_validator("name")
@@ -48,6 +50,8 @@ class ProjectUpdate(BaseModel):
     previous_status: Optional[int] = None
     priority_id: Optional[int] = None
     is_archived: Optional[bool] = None
+    is_template: Optional[bool] = None
+    is_group: Optional[bool] = None
     user_emails: Optional[List[str]] = None
 
 class ProjectResponse(BaseModel):
@@ -66,6 +70,8 @@ class ProjectResponse(BaseModel):
     actual_hours: Optional[float] = None
 
     is_archived: bool = False
+    is_template: bool = False
+    is_group: bool = False
 
     manager_email: Optional[str] = None
     created_by_email: Optional[str] = None

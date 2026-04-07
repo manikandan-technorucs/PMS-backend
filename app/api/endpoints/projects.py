@@ -33,7 +33,9 @@ def read_projects(
     status_id: Optional[List[int]] = Query(None),
     priority_id: Optional[List[int]] = Query(None),
     manager_email: Optional[List[str]] = Query(None),
-    is_archived: bool = Query(False, description="Set to true to list archived projects only"),
+    is_archived: Optional[bool] = Query(None),
+    is_template: Optional[bool] = Query(None),
+    include_all: bool = Query(True, description="Return all projects regardless of archive/template status"),
     db: Session = Depends(get_db),
     current_user = Depends(allow_authenticated)
 ):
@@ -46,6 +48,8 @@ def read_projects(
         priority_ids=priority_id,
         manager_emails=manager_email,
         is_archived=is_archived,
+        is_template=is_template,
+        include_all=include_all,
         current_user=current_user if is_employee_only(current_user) else None,
     )
     return projects

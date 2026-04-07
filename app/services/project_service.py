@@ -22,6 +22,9 @@ def get_projects(
     status_ids: Optional[List[int]] = None,
     priority_ids: Optional[List[int]] = None,
     manager_emails: Optional[List[str]] = None,
+    is_archived: Optional[bool] = None,
+    is_template: Optional[bool] = None,
+    include_all: bool = False,
     current_user=None,
     **kwargs
 ):
@@ -37,6 +40,12 @@ def get_projects(
         query = query.join(pu_table, pu_table.c.project_id == Project.id).filter(
             pu_table.c.user_id == current_user.id
         )
+
+    if not include_all:
+        if is_archived is not None:
+            query = query.filter(Project.is_archived == is_archived)
+        if is_template is not None:
+            query = query.filter(Project.is_template == is_template)
 
     if status_ids:
         query = query.filter(Project.status_id.in_(status_ids))
@@ -59,7 +68,10 @@ def create_project(db: Session, project: ProjectCreate, actor_id: str):
         priority_id=project.priority_id,
         start_date=project.start_date,
         end_date=project.end_date,
-        estimated_hours=project.estimated_hours
+        estimated_hours=project.estimated_hours,
+        is_archived=project.is_archived,
+        is_template=project.is_template,
+        is_group=project.is_group
     )
     if hasattr(project, 'user_emails') and project.user_emails:
         users = db.query(User).filter(User.email.in_(project.user_emails)).all()
