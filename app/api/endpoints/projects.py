@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from app.core.database import get_db
 from app.core.security import (
-    allow_authenticated, allow_pm, allow_team_lead_plus, 
+    allow_authenticated, allow_pm, allow_team_lead_plus,
     is_employee_only, FULL_ACCESS_ROLES
 )
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse, ProjectUserCreate
@@ -142,20 +142,20 @@ def bulk_assign_users_to_project(
 
     from app.models.user import User
     from app.models.project import Project
-    
+
     db_project = db.query(Project).filter(Project.id == project_id).first()
     if not db_project:
         raise HTTPException(status_code=404, detail="Project not found")
-        
+
     db_users = db.query(User).filter(User.email.in_(user_emails)).all()
     if len(db_users) != len(user_emails):
         raise HTTPException(status_code=400, detail="Some users were not found in the system")
-        
+
     existing_user_ids = {u.id for u in db_project.users}
     for user in db_users:
         if user.id not in existing_user_ids:
             db_project.users.append(user)
-            
+
     db.commit()
     return {"message": f"{len(db_users)} users assigned to project successfully"}
 
@@ -166,7 +166,7 @@ def assign_user_to_project_legacy(project_id: int, user_email: str, db: Session 
     db_user = db.query(User).filter(User.email == user_email).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     success = project_service.add_user_to_project(
         db,
         project_id=project_id,
@@ -220,10 +220,10 @@ def update_project_audited(
 def get_project_audit_logs(project_id: int, db: Session = Depends(get_db)):
 
     from app.models.audit import AuditLogs
-    
+
     logs = db.query(AuditLogs).filter(
         AuditLogs.TableName == "projects",
         AuditLogs.Comments.like(f"%Record ID: {project_id}%")
     ).order_by(AuditLogs.PerformedOn.desc()).all()
-    
+
     return logs

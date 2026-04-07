@@ -21,20 +21,20 @@ def get_report_summary(db: Session = Depends(get_db)):
     active_projects = db.query(Project).join(
         Status, Project.status_id == Status.id
     ).filter(Status.name.notin_(["Completed", "Closed"])).count()
-    
+
     total_issues = db.query(Issue).count()
     open_issues = db.query(Issue).join(
         Status, Issue.status_id == Status.id
     ).filter(Status.name.notin_(["Completed", "Closed", "Resolved"])).count()
-    
+
     total_tasks = db.query(Task).count()
     completed_tasks = db.query(Task).join(
         Status, Task.status_id == Status.id
     ).filter(Status.name == "Completed").count()
-    
+
     total_hours_logged = db.query(func.sum(TimeLog.hours)).scalar() or 0.0
     total_milestones = db.query(Milestone).count()
-    
+
     return {
         "total_projects": total_projects,
         "active_projects": active_projects,
@@ -98,4 +98,3 @@ def export_csv_report(report_type: str = "projects", db: Session = Depends(get_d
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename={report_type}_report.csv"}
     )
-

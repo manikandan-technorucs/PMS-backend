@@ -25,7 +25,7 @@ def search_teams(db: Session, query: str = "", limit: int = 15):
 
 def create_team(db: Session, team: TeamCreate, actor_id: Optional[str] = None):
     public_id = generate_public_id("TM-")
-    
+
     db_team = Team(
         public_id=public_id,
         name=team.name,
@@ -38,11 +38,11 @@ def create_team(db: Session, team: TeamCreate, actor_id: Optional[str] = None):
         channel_id=team.channel_id,
         lead_email=team.lead_email,
     )
-    
+
     if team.member_emails:
         members = db.query(User).filter(User.email.in_(team.member_emails)).all()
         db_team.members = members
-        
+
     db.add(db_team)
     db.flush()
 
@@ -59,16 +59,16 @@ def update_team(db: Session, team_id: int, team_update: TeamUpdate, actor_id: Op
     db_team = db.query(Team).filter(Team.id == team_id).first()
     if not db_team:
         return None
-        
+
     update_data = team_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_team, update_data)
-    
+
     if "member_emails" in update_data:
         member_emails = update_data.pop("member_emails")
         if member_emails is not None:
             members = db.query(User).filter(User.email.in_(member_emails)).all()
             db_team.members = members
-            
+
     for key, value in update_data.items():
         setattr(db_team, key, value)
 
@@ -76,7 +76,7 @@ def update_team(db: Session, team_id: int, team_update: TeamUpdate, actor_id: Op
                 resource_id=team_id,
                 record_id=team_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_team)
     return get_team(db, db_team.id)
@@ -96,7 +96,7 @@ def delete_team(db: Session, team_id: int, actor_id: Optional[str] = None):
 def add_team_member(db: Session, team_id: int, user_email: str, actor_id: Optional[str] = None):
     db_team = db.query(Team).filter(Team.id == team_id).first()
     db_user = db.query(User).filter(User.email == user_email).first()
-    
+
     if db_team and db_user:
         if db_user not in db_team.members:
             db_team.members.append(db_user)
@@ -111,7 +111,7 @@ def add_team_member(db: Session, team_id: int, user_email: str, actor_id: Option
 def remove_team_member(db: Session, team_id: int, user_email: str, actor_id: Optional[str] = None):
     db_team = db.query(Team).filter(Team.id == team_id).first()
     db_user = db.query(User).filter(User.email == user_email).first()
-    
+
     if db_team and db_user:
         if db_user in db_team.members:
             db_team.members.remove(db_user)

@@ -21,5 +21,5 @@ def read_audit_logs(
         query = query.filter(AuditLogs.TableName == resource_name)
     if user_id:
         query = query.filter(AuditLogs.PerformedBy == user_id)
-        
+
     return query.order_by(AuditLogs.PerformedOn.desc()).offset(skip).limit(limit).all()

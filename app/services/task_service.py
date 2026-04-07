@@ -17,9 +17,9 @@ def get_task(db: Session, task_id: int):
     ).filter(Task.id == task_id).first()
 
 def get_tasks(
-    db: Session, 
-    skip: int = 0, 
-    limit: int = 100, 
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
     project_id: int = None,
     status_ids: Optional[List[int]] = None,
     priority_ids: Optional[List[int]] = None,
@@ -43,7 +43,7 @@ def get_tasks(
         query = query.filter(Task.priority_id.in_(priority_ids))
     if assignee_emails:
         query = query.filter(Task.assignee_email.in_(assignee_emails))
-        
+
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     return {"total": total, "items": items}
@@ -70,7 +70,7 @@ def create_task(db: Session, task: TaskCreate, actor_id: Optional[str] = None):
     if task.owner_ids:
         owners = db.query(User).filter(User.id.in_(task.owner_ids)).all()
         db_task.owners.extend(owners)
-    
+
     if task.assignee_ids:
         assignees = db.query(User).filter(User.id.in_(task.assignee_ids)).all()
         db_task.assignees.extend(assignees)
@@ -91,7 +91,7 @@ def update_task(db: Session, task_id: int, task_update: TaskUpdate, actor_id: Op
     db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         return None
-    
+
     update_data = task_update.model_dump(exclude_unset=True, exclude={'owner_ids', 'assignee_ids'})
     changes = capture_audit_details(db_task, update_data)
 
@@ -139,7 +139,7 @@ def search_tasks(db: Session, query: str, project_id: int = None, limit: int = 2
     )
     if project_id:
         query_obj = query_obj.filter(Task.project_id == project_id)
-    
+
     return query_obj.filter(
         or_(
             Task.title.ilike(q),

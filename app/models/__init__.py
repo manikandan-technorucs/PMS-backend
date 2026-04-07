@@ -11,4 +11,3 @@ from app.models.task_list import TaskList
 from app.models.document import Document
 from app.models.project_group import ProjectGroup
 from app.models.audit import AuditFieldsMapping, AuditLogs, AuditLogDetails, AuditMetaDataInfo
-

@@ -31,13 +31,13 @@ def update_project_group(db: Session, group_id: int, group_update: ProjectGroupU
     db_group = get_project_group(db, group_id)
     if not db_group:
         return None
-    
+
     update_data = group_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_group, update_data)
 
     for key, value in update_data.items():
         setattr(db_group, key, value)
-    
+
     write_audit(db, actor_id, "UPDATE", "project_groups",
                 resource_id=group_id,
                 record_id=group_id,

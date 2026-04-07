@@ -20,40 +20,40 @@ def get_role(db: Session, role_id: int):
 
 def create_role(db: Session, role: dict):
     user_ids = role.pop('user_ids', [])
-    
+
     db_role = Role(**role)
     db.add(db_role)
     db.commit()
     db.refresh(db_role)
-    
+
     if user_ids:
         users_to_update = db.query(User).filter(User.id.in_(user_ids)).all()
         for user in users_to_update:
             user.role_id = db_role.id
         db.commit()
-        
+
     return db_role
 
 def update_role(db: Session, role_id: int, role: dict):
     db_role = db.query(Role).filter(Role.id == role_id).first()
-    
+
     if db_role:
         user_ids = role.pop('user_ids', None)
-        
+
         for key, value in role.items():
             setattr(db_role, key, value)
-            
+
         if user_ids is not None:
             db.query(User).filter(User.role_id == role_id).update({"role_id": None})
-            
+
             if user_ids:
                 users_to_update = db.query(User).filter(User.id.in_(user_ids)).all()
                 for user in users_to_update:
                     user.role_id = db_role.id
-                    
+
         db.commit()
         db.refresh(db_role)
-        
+
     return db_role
 
 def delete_role(db: Session, role_id: int):

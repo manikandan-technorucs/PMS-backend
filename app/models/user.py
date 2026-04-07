@@ -29,7 +29,7 @@ user_skill_link = Table(
 class User(AuditMixin, Base):
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint('email', name='uq_user_email'),)
-    
+
     id = Column(Integer, primary_key=True, index=True)
     public_id = Column(String(50), unique=True, index=True, nullable=False)
     employee_id = Column(String(50), unique=True, index=True, nullable=False)
@@ -52,11 +52,11 @@ class User(AuditMixin, Base):
 
     o365_id = Column(String(255), unique=True, index=True, nullable=True)
     is_synced = Column(Boolean, default=False)
-    is_external = Column(Boolean, default=False)  # True for Customers
+    is_external = Column(Boolean, default=False)
 
     role_id = Column(Integer, ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
     status_id = Column(Integer, ForeignKey("user_statuses.id", ondelete="SET NULL"), nullable=True)
-    
+
     manager_email = Column(String(255), ForeignKey("users.email", ondelete="SET NULL"), nullable=True)
 
     role = relationship("Role", lazy="joined")

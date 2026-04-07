@@ -42,7 +42,7 @@ def update_timesheet(db: Session, timesheet_id: int, timesheet_update: Timesheet
     db_timesheet = db.query(Timesheet).filter(Timesheet.id == timesheet_id).first()
     if not db_timesheet:
         return None
-    
+
     update_data = timesheet_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_timesheet, update_data)
 
@@ -53,7 +53,7 @@ def update_timesheet(db: Session, timesheet_id: int, timesheet_update: Timesheet
                 resource_id=db_timesheet.project_id or timesheet_id,
                 record_id=timesheet_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_timesheet)
     return db_timesheet
@@ -62,7 +62,7 @@ def delete_timesheet(db: Session, timesheet_id: int, actor_id: Optional[str] = N
     db_timesheet = db.query(Timesheet).filter(Timesheet.id == timesheet_id).first()
     if not db_timesheet:
         return False
-    
+
     write_audit(db, actor_id, "DELETE", "timesheets",
                 resource_id=db_timesheet.project_id or timesheet_id,
                 record_id=timesheet_id,

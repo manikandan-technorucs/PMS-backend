@@ -68,7 +68,7 @@ async def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_db))
         error_detail = exc.response.text
         logger.error(f"MS token exchange failed: {error_detail}")
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, 
+            status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Microsoft rejected the token exchange: {error_detail}"
         )
     except httpx.HTTPError as exc:

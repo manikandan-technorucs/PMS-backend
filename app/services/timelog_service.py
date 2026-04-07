@@ -15,8 +15,8 @@ def get_timelog(db: Session, timelog_id: int):
     ).filter(TimeLog.id == timelog_id).first()
 
 def get_timelogs(
-    db: Session, 
-    skip: int = 0, 
+    db: Session,
+    skip: int = 0,
     limit: int = 100,
     project_id: int = None,
     task_id: int = None,
@@ -50,7 +50,7 @@ def get_timelogs(
         query = query.filter(TimeLog.user_email.in_(user_emails))
     if current_user is not None:
         query = query.filter(TimeLog.user_email == current_user.email)
-        
+
     return query.offset(skip).limit(limit).all()
 
 def create_timelog(db: Session, timelog: TimeLogCreate, actor_id: Optional[str] = None):
@@ -87,7 +87,7 @@ def update_timelog(db: Session, timelog_id: int, timelog_update: TimeLogUpdate, 
     db_timelog = db.query(TimeLog).filter(TimeLog.id == timelog_id).first()
     if not db_timelog:
         return None
-    
+
     update_data = timelog_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_timelog, update_data)
 
@@ -98,7 +98,7 @@ def update_timelog(db: Session, timelog_id: int, timelog_update: TimeLogUpdate, 
                 resource_id=db_timelog.project_id or timelog_id,
                 record_id=timelog_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_timelog)
     return get_timelog(db, db_timelog.id)
@@ -120,7 +120,7 @@ def create_timelogs_bulk(db: Session, timelogs: list[TimeLogCreate], actor_id: O
     for log in timelogs:
         if log.hours <= 0:
             continue
-            
+
         db_log = TimeLog(
             user_email=log.user_email,
             project_id=log.project_id,
@@ -136,12 +136,12 @@ def create_timelogs_bulk(db: Session, timelogs: list[TimeLogCreate], actor_id: O
         )
         db_logs.append(db_log)
         db.add(db_log)
-        
+
     db.flush()
     db.commit()
     for db_log in db_logs:
         db.refresh(db_log)
-        
+
     if actor_id and db_logs:
         write_audit(db, actor_id, "CREATE", "timelogs",
                     resource_id=db_logs[0].project_id or db_logs[0].id,
@@ -151,5 +151,5 @@ def create_timelogs_bulk(db: Session, timelogs: list[TimeLogCreate], actor_id: O
                         "old_value": None,
                         "new_value": f"Bulk created {len(db_logs)} time logs"
                     }])
-                    
+
     return db_logs

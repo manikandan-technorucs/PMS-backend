@@ -18,10 +18,10 @@ def create_timesheet(timesheet: TimesheetCreate, db: Session = Depends(get_db), 
 
 @router.get("/", response_model=List[TimesheetResponse])
 def read_timesheets(
-    skip: int = 0, 
-    limit: int = 100, 
-    project_id: int = None, 
-    user_email: str = None, 
+    skip: int = 0,
+    limit: int = 100,
+    project_id: int = None,
+    user_email: str = None,
     db: Session = Depends(get_db),
     current_user = Depends(allow_authenticated)
 ):
@@ -46,7 +46,7 @@ def update_timesheet(timesheet_id: int, timesheet: TimesheetUpdate, db: Session 
         raise HTTPException(status_code=404, detail="Timesheet not found")
     if is_employee_only(current_user) and db_timesheet.user_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only update your own timesheets.")
-    
+
     updated = timesheet_service.update_timesheet(db, timesheet_id=timesheet_id, timesheet_update=timesheet, actor_id=current_user.o365_id or str(current_user.id))
     if updated is None:
         raise HTTPException(status_code=404, detail="Timesheet not found")

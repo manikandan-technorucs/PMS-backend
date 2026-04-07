@@ -24,10 +24,10 @@ class Document(AuditMixin, Base):
     description = Column(Text, nullable=True)
     file_url = Column(String(1024), nullable=False)
     file_type = Column(String(100), nullable=True)
-    file_size = Column(Integer, nullable=True) # in bytes
-    
+    file_size = Column(Integer, nullable=True)
+
     project_id = Column(Integer, ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    
+
     uploaded_by_email = Column(String(255), ForeignKey("users.email", ondelete="SET NULL"), nullable=True)
 
     project = relationship("Project", back_populates="documents")

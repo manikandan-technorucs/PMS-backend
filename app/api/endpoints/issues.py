@@ -30,8 +30,8 @@ def search_issues(
 
 @router.get("/", response_model=IssueListResponse)
 def read_issues(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     project_id: Optional[int] = None,
     status_id: Optional[List[int]] = Query(None),
     priority_id: Optional[List[int]] = Query(None),
@@ -44,9 +44,9 @@ def read_issues(
         assignee_email = [current_user.email]
 
     return issue_service.get_issues(
-        db, 
-        skip=skip, 
-        limit=limit, 
+        db,
+        skip=skip,
+        limit=limit,
         project_id=project_id,
         status_ids=status_id,
         priority_ids=priority_id,
@@ -69,7 +69,7 @@ def update_issue(issue_id: int, issue: IssueUpdate, db: Session = Depends(get_db
         raise HTTPException(status_code=404, detail="Issue not found")
     if is_employee_only(current_user) and db_issue.assignee_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only update issues assigned to you.")
-    
+
     updated = issue_service.update_issue(db, issue_id=issue_id, issue_update=issue, actor_id=current_user.o365_id or str(current_user.id))
     if updated is None:
         raise HTTPException(status_code=404, detail="Issue not found")

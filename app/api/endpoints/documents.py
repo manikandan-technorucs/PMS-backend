@@ -25,8 +25,8 @@ def create_document(
     db: Session = Depends(get_db)
 ):
     return document_service.create_document(
-        db=db, 
-        document=document, 
+        db=db,
+        document=document,
         uploaded_by_email=current_user.email,
         actor_id=current_user.o365_id or str(current_user.id)
     )
@@ -43,12 +43,12 @@ async def upload_document(
     file_ext = os.path.splitext(file.filename)[1]
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, unique_filename)
-    
+
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
+
     file_size = os.path.getsize(file_path)
-    
+
     document_data = DocumentCreate(
         title=title or file.filename,
         description=description,
@@ -57,26 +57,26 @@ async def upload_document(
         file_size=file_size,
         project_id=project_id
     )
-    
+
     return document_service.create_document(
-        db=db, 
-        document=document_data, 
+        db=db,
+        document=document_data,
         uploaded_by_email=current_user.email,
         actor_id=current_user.o365_id or str(current_user.id)
     )
 
 @router.get("/", response_model=List[DocumentResponse])
 def read_documents(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     project_id: Optional[int] = Query(None),
     file_type: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     return document_service.get_documents(
-        db, 
-        skip=skip, 
-        limit=limit, 
+        db,
+        skip=skip,
+        limit=limit,
         project_id=project_id,
         file_type=file_type
     )

@@ -29,12 +29,12 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), current_user = 
     db_user = user_service.get_user_by_email(db, email=user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     if user.username:
         db_user = user_service.get_user_by_username(db, username=user.username)
         if db_user:
             raise HTTPException(status_code=400, detail="Username already registered")
-        
+
     try:
         return user_service.create_user(db=db, user=user, actor_id=current_user.o365_id or str(current_user.id))
     except Exception as e:
@@ -44,17 +44,17 @@ def create_user(user: UserCreate, db: Session = Depends(get_db), current_user = 
 
 @router.get("/", response_model=UserListResponse, dependencies=[Depends(allow_authenticated)])
 def read_users(
-    skip: int = 0, 
-    limit: int = 100, 
+    skip: int = 0,
+    limit: int = 100,
     search: Optional[str] = None,
     role_id: List[int] = Query(None),
     db: Session = Depends(get_db)
 ):
 
     return user_service.get_users(
-        db, 
-        skip=skip, 
-        limit=limit, 
+        db,
+        skip=skip,
+        limit=limit,
         search=search,
         role_ids=role_id,
     )
@@ -72,7 +72,7 @@ def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get
 
     if is_employee_only(current_user) and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Access denied: you can only update your own profile.")
-    
+
     db_user = user_service.update_user(db, user_id=user_id, user_update=user_update, actor_id=current_user.o365_id or str(current_user.id))
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")

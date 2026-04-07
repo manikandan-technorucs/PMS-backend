@@ -1,5 +1,3 @@
-
-
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
 import uuid
@@ -10,7 +8,7 @@ def capture_audit_details(
     old_obj: Any,
     new_data_dict: Dict[str, Any],
 ) -> List[Dict[str, Optional[str]]]:
-  
+
     changes: List[Dict[str, Optional[str]]] = []
 
     for field, new_value in new_data_dict.items():
@@ -39,7 +37,7 @@ def write_audit(
     record_id:     int,
     details:       Optional[List[Dict[str, Optional[str]]]] = None,
 ) -> None:
-   
+
     from app.models.audit import AuditLogs, AuditLogDetails
 
     action_map = {
@@ -56,19 +54,18 @@ def write_audit(
         performed_by = (
             uuid.UUID(actor_id)
             if actor_id and actor_id != "system"
-            else uuid.UUID(int=0)       # Nil UUID for system-initiated actions
+            else uuid.UUID(int=0)
         )
     except (ValueError, AttributeError):
         performed_by = uuid.UUID(int=0)
 
-   
     with db.begin_nested():
 
         audit_log = AuditLogs(
             TableName     = resource_name[:250],
             Action        = action_int,
             PerformedBy   = performed_by,
-            PerformedOn   = datetime.now(timezone.utc).replace(tzinfo=None),  # naive UTC
+            PerformedOn   = datetime.now(timezone.utc).replace(tzinfo=None),
             TransactionId = uuid.uuid4(),
             Comments      = f"Action: {action_type} on Record ID: {record_id}",
             ModuleName    = "System",
@@ -84,8 +81,7 @@ def write_audit(
                     FieldName  = str(d.get("field_name", ""))[:250],
                     OldValue   = str(d["old_value"]) if d.get("old_value") is not None else None,
                     NewValue   = str(d["new_value"]) if d.get("new_value") is not None else None,
-                    ValueType  = 1,     # 1 = plain text
+                    ValueType  = 1,
                 )
                 for d in details
             ])
-

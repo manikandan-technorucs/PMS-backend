@@ -8,7 +8,7 @@ class SearchService:
     def global_search(self, db: Session, query: str, limit: int = 15):
         if not query:
             return []
-        
+
         search_results = []
         q = f"%{query}%"
 
@@ -19,7 +19,7 @@ class SearchService:
                 Project.client.ilike(q)
             )
         ).limit(limit).all()
-        
+
         for p in projects:
             search_results.append({
                 "type": "project",
@@ -34,7 +34,7 @@ class SearchService:
                 Task.public_id.ilike(q)
             )
         ).limit(limit).all()
-        
+
         for t in tasks:
             search_results.append({
                 "type": "task",
@@ -49,7 +49,7 @@ class SearchService:
                 Issue.public_id.ilike(q)
             )
         ).limit(limit).all()
-        
+
         for i in issues:
             search_results.append({
                 "type": "issue",
@@ -62,7 +62,7 @@ class SearchService:
 
     def search_work_items(self, db: Session, query: str = "", project_id: int = None, limit: int = 20):
         search_results = []
-        
+
         task_filters = []
         issue_filters = []
 
@@ -91,7 +91,7 @@ class SearchService:
                 "type": "issue",
                 "id": i.id,
                 "public_id": i.public_id,
-                "name": f"[Issue] {i.title}", # Prefixing to distinguish
+                "name": f"[Issue] {i.title}",
                 "title": i.title
             })
 

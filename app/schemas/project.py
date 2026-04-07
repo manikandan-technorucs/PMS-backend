@@ -11,8 +11,8 @@ class ProjectBase(BaseModel):
     description: Optional[str] = None
     client: Optional[str] = None
 
-    start_date: Optional[date] = None           # expected_start_date
-    end_date: Optional[date] = None             # expected_end_date
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
     estimated_hours: Optional[float] = None
 
     actual_start_date: Optional[date] = None
@@ -90,7 +90,7 @@ class ProjectUserCreate(BaseModel):
 
     user_id: str
     user_email: str
-    display_name: Optional[str] = None  # Needed for JIT provisioning
+    display_name: Optional[str] = None
     project_id: int
     role_id: Optional[int] = None
 

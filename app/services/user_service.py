@@ -22,8 +22,8 @@ def get_user_by_username(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
 def get_users(
-    db: Session, 
-    skip: int = 0, 
+    db: Session,
+    skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
     role_ids: Optional[List[int]] = None,
@@ -33,7 +33,7 @@ def get_users(
         joinedload(User.status),
         joinedload(User.skills)
     )
-    
+
     if search:
         from sqlalchemy import or_
         q = f"%{search}%"
@@ -46,18 +46,18 @@ def get_users(
                 User.display_name.ilike(q)
             )
         )
-        
+
     if role_ids:
         query = query.filter(User.role_id.in_(role_ids))
-        
+
     total = query.count()
     data = query.offset(skip).limit(limit).all()
-    
+
     return {"total": total, "data": data}
 
 def create_user(db: Session, user: UserCreate, actor_id: Optional[str] = None):
     public_id = generate_public_id("USR-")
-    
+
     db_user = User(
         public_id=public_id,
         employee_id=user.employee_id or generate_public_id("EMP-"),
@@ -79,7 +79,7 @@ def create_user(db: Session, user: UserCreate, actor_id: Optional[str] = None):
         language=user.language,
         timezone=user.timezone
     )
-    
+
     if user.skill_ids:
         skills = db.query(Skill).filter(Skill.id.in_(user.skill_ids)).all()
         db_user.skills.extend(skills)
@@ -100,16 +100,16 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate, actor_id: Op
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         return None
-        
+
     update_data = user_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_user, update_data)
-    
+
     if "skill_ids" in update_data:
         skill_ids = update_data.pop("skill_ids")
         if skill_ids is not None:
             skills = db.query(Skill).filter(Skill.id.in_(skill_ids)).all()
             db_user.skills = skills
-            
+
     for key, value in update_data.items():
         setattr(db_user, key, value)
 
@@ -117,7 +117,7 @@ def update_user(db: Session, user_id: int, user_update: UserUpdate, actor_id: Op
                 resource_id=user_id,
                 record_id=user_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_user)
     return get_user(db, db_user.id)
@@ -162,19 +162,19 @@ def upsert_o365_user(
 ) -> User:
 
     user = db.query(User).filter(User.o365_id == o365_id).first()
-    
+
     if not user and email:
         user = db.query(User).filter(User.email == email.lower()).first()
 
     if user:
         user.o365_id = o365_id
         user.is_synced = True
-        
+
         if not user.role_id:
             default_role = db.query(Role).filter(Role.name == "Employee").first()
             if default_role:
                 user.role_id = default_role.id
-        
+
         if not user.status_id:
             from app.models.masters import UserStatus
             default_status = db.query(UserStatus).filter(UserStatus.name == "Active").first()

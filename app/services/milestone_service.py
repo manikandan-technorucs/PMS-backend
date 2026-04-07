@@ -13,9 +13,9 @@ def get_milestone(db: Session, milestone_id: int):
     ).filter(Milestone.id == milestone_id).first()
 
 def get_milestones(
-    db: Session, 
-    project_id: int = None, 
-    skip: int = 0, 
+    db: Session,
+    project_id: int = None,
+    skip: int = 0,
     limit: int = 100,
 ):
     query = db.query(Milestone).options(
@@ -24,7 +24,7 @@ def get_milestones(
     )
     if project_id:
         query = query.filter(Milestone.project_id == project_id)
-        
+
     return query.offset(skip).limit(limit).all()
 
 def create_milestone(db: Session, milestone: MilestoneCreate, actor_id: Optional[str] = None):
@@ -56,7 +56,7 @@ def update_milestone(db: Session, milestone_id: int, milestone_update: Milestone
     db_milestone = db.query(Milestone).filter(Milestone.id == milestone_id).first()
     if not db_milestone:
         return None
-    
+
     update_data = milestone_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_milestone, update_data)
 
@@ -67,7 +67,7 @@ def update_milestone(db: Session, milestone_id: int, milestone_update: Milestone
                 resource_id=db_milestone.project_id or milestone_id,
                 record_id=milestone_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_milestone)
     return get_milestone(db, db_milestone.id)

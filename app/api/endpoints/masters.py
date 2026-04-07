@@ -97,7 +97,7 @@ def bulk_assign_users_to_role(role_id: int, user_emails: List[str], db: Session 
     db_role = db.query(Role).filter(Role.id == role_id).first()
     if not db_role:
         raise HTTPException(status_code=404, detail="Role not found")
-    
+
     if user_emails:
         db.query(User).filter(User.email.in_(user_emails)).update({"role_id": role_id}, synchronize_session=False)
         db.commit()

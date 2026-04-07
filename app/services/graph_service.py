@@ -1,4 +1,3 @@
-
 import msal
 import requests
 from typing import List, Dict, Any, Optional
@@ -37,7 +36,7 @@ def get_graph_token() -> str:
     )
 
 def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> None:
-   
+
     from app.models.user import User
     from app.utils.ids import generate_public_id
 
@@ -46,10 +45,10 @@ def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> None:
     display_name = graph_user.get("displayName", "")
 
     if not oid or not mail:
-        return  # Cannot provision without both OID and mail — skip silently
+        return
 
     try:
-        with db.begin_nested():  # SAVEPOINT — atomic, independent rollback
+        with db.begin_nested():
             existing = db.query(User).filter(User.o365_id == oid).first()
             if existing:
                 stale = (
@@ -59,14 +58,14 @@ def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> None:
                 if stale:
                     existing.display_name = display_name
                     existing.email        = mail
-                return  # Savepoint committed on context-manager exit
+                return
 
             existing_by_email = db.query(User).filter(User.email == mail).first()
             if existing_by_email:
                 existing_by_email.o365_id     = oid
                 existing_by_email.display_name = display_name
                 existing_by_email.is_synced   = True
-                return  # Savepoint committed
+                return
 
             name_parts = display_name.split(" ", 1)
             first_name = name_parts[0]
@@ -91,7 +90,7 @@ def search_azure_users(
     query: str,
     db: Optional[Session] = None,
 ) -> List[Dict[str, Any]]:
-    
+
     token = get_graph_token()
 
     headers = {

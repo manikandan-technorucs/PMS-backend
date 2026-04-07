@@ -29,7 +29,7 @@ class TimesheetResponse(TimesheetBase):
     id: int
     project_id: int
     user_email: str
-    
+
     project: Optional[ProjectBase] = None
     user: Optional[UserBase] = None
 

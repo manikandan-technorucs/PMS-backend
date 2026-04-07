@@ -31,7 +31,7 @@ class AuditMixin:
     is_deleted  = Column(Boolean, default=False, nullable=False)
 
 def get_db():
-    
+
     db = SessionLocal()
     try:
         yield db

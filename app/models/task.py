@@ -37,8 +37,8 @@ class Task(AuditMixin, Base):
 
     previous_status = Column(String(100), nullable=True)
 
-    start_date = Column(Date, nullable=True)        # expected_start_date
-    end_date = Column(Date, nullable=True)          # expected_end_date
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     due_date = Column(Date, nullable=True)
     progress = Column(Integer, default=0)
 

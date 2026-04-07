@@ -28,16 +28,16 @@ class Project(AuditMixin, Base):
     name = Column(String(255), index=True, nullable=False)
     description = Column(Text, nullable=True)
     client = Column(String(255), nullable=True)
-    
+
     manager_email = Column(String(255), ForeignKey("users.email"), nullable=True)
     created_by_email = Column(String(255), ForeignKey("users.email", ondelete="SET NULL"), nullable=True)
-    
+
     status_id = Column(Integer, ForeignKey("statuses.id"), nullable=True)
     previous_status = Column(Integer, ForeignKey("statuses.id", ondelete="SET NULL"), nullable=True)
     priority_id = Column(Integer, ForeignKey("priorities.id"), nullable=True)
 
-    start_date = Column(Date, nullable=True)        # expected_start_date alias
-    end_date = Column(Date, nullable=True)          # expected_end_date alias
+    start_date = Column(Date, nullable=True)
+    end_date = Column(Date, nullable=True)
     estimated_hours = Column(Numeric(10, 2), nullable=True)
 
     actual_start_date = Column(Date, nullable=True)

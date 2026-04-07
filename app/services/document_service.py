@@ -48,7 +48,7 @@ def update_document(db: Session, document_id: int, document_update: DocumentUpda
     db_document = db.query(Document).filter(Document.id == document_id).first()
     if not db_document:
         return None
-    
+
     update_data = document_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_document, update_data)
 
@@ -59,7 +59,7 @@ def update_document(db: Session, document_id: int, document_update: DocumentUpda
                 resource_id=db_document.project_id or document_id,
                 record_id=document_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_document)
     return get_document(db, db_document.id)

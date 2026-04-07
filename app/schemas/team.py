@@ -33,10 +33,10 @@ class TeamResponse(TeamBase):
     id: int
     public_id: str
     lead_email: Optional[str] = None
-    
+
     lead: Optional[UserBase] = None
     members_count: int = 0
-    
+
     model_config = {"from_attributes": True}
 
 class TeamWithMembersResponse(TeamResponse):

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = Field(alias="SECRET_KEY")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480  # 8 hours
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
     BACKEND_CORS_ORIGINS: Union[list[str], str] = Field(default=[])
 
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
-        populate_by_name=True,   # allow both alias and field name
+        populate_by_name=True,
     )
 
 settings = Settings()

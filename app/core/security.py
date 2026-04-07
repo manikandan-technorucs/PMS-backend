@@ -33,7 +33,7 @@ def create_access_token(subject: Union[str, Any], expires_delta: Optional[timede
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
@@ -130,7 +130,7 @@ class ProjectRoleChecker:
 
         from app.models.project import project_users
         from sqlalchemy import select
-        
+
         assignment = db.execute(
             select(project_users.c.role_id).where(
                 project_users.c.project_id == project_id,

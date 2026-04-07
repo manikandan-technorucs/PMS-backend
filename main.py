@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 if not os.path.exists("uploads"):
     os.makedirs("uploads")
 
-Base.metadata.create_all(bind=engine)  # Enabled for Hard Reset
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -55,28 +55,28 @@ _raw_origins: list[str] = (
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_raw_origins,
-    allow_credentials=True,                     
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[
-        "Authorization",                        
-        "Content-Type",                         
+        "Authorization",
+        "Content-Type",
         "Accept",
         "Origin",
         "X-Requested-With",
-        "ConsistencyLevel",                     
-        "X-Forwarded-For",                      
+        "ConsistencyLevel",
+        "X-Forwarded-For",
         "X-Forwarded-Proto",
     ],
-    expose_headers=["Content-Disposition"],     # Enables file download filename parsing
-    max_age=600,                                # Preflight cache: 10 minutes
+    expose_headers=["Content-Disposition"],
+    max_age=600,
 )
 
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=[
-        "trucszohoreplica.azurewebsites.net",  # Azure App Service production
-        "*.azurewebsites.net",                  # Allow staging slots (e.g. -staging)
-        "localhost",                            # Local development
+        "trucszohoreplica.azurewebsites.net",
+        "*.azurewebsites.net",
+        "localhost",
         "127.0.0.1",
     ],
 )

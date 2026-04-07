@@ -20,9 +20,9 @@ def get_issue(db: Session, issue_id: int):
     ).filter(Issue.id == issue_id).first()
 
 def get_issues(
-    db: Session, 
-    skip: int = 0, 
-    limit: int = 100, 
+    db: Session,
+    skip: int = 0,
+    limit: int = 100,
     project_id: int = None,
     status_ids: Optional[List[int]] = None,
     priority_ids: Optional[List[int]] = None,
@@ -46,7 +46,7 @@ def get_issues(
         query = query.filter(Issue.priority_id.in_(priority_ids))
     if assignee_emails:
         query = query.filter(Issue.assignee_email.in_(assignee_emails))
-        
+
     total = query.count()
     items = query.offset(skip).limit(limit).all()
     return {"total": total, "items": items}
@@ -70,15 +70,15 @@ def create_issue(db: Session, issue: IssueCreate, actor_id: Optional[str] = None
         due_date=issue.due_date,
         estimated_hours=issue.estimated_hours
     )
-    
+
     if issue.follower_ids:
         followers = db.query(User).filter(User.id.in_(issue.follower_ids)).all()
         db_issue.followers.extend(followers)
-    
+
     if hasattr(issue, 'assignee_ids') and issue.assignee_ids:
         assignees = db.query(User).filter(User.id.in_(issue.assignee_ids)).all()
         db_issue.assignees.extend(assignees)
-    
+
     if hasattr(issue, 'document_ids') and issue.document_ids:
         docs = db.query(Document).filter(Document.id.in_(issue.document_ids)).all()
         db_issue.documents.extend(docs)
@@ -99,21 +99,21 @@ def update_issue(db: Session, issue_id: int, issue_update: IssueUpdate, actor_id
     db_issue = db.query(Issue).filter(Issue.id == issue_id).first()
     if not db_issue:
         return None
-    
+
     update_data = issue_update.model_dump(exclude_unset=True, exclude={'document_ids', 'follower_ids', 'assignee_ids'})
     changes = capture_audit_details(db_issue, update_data)
 
     for key, value in update_data.items():
         setattr(db_issue, key, value)
-        
+
     if hasattr(issue_update, 'follower_ids') and issue_update.follower_ids is not None:
         followers = db.query(User).filter(User.id.in_(issue_update.follower_ids)).all()
         db_issue.followers = followers
-        
+
     if hasattr(issue_update, 'assignee_ids') and issue_update.assignee_ids is not None:
         assignees = db.query(User).filter(User.id.in_(issue_update.assignee_ids)).all()
         db_issue.assignees = assignees
-        
+
     if hasattr(issue_update, 'document_ids') and issue_update.document_ids is not None:
         docs = db.query(Document).filter(Document.id.in_(issue_update.document_ids)).all()
         db_issue.documents = docs
@@ -153,7 +153,7 @@ def search_issues(db: Session, query: str, project_id: int = None, limit: int = 
     )
     if project_id:
         query_obj = query_obj.filter(Issue.project_id == project_id)
-    
+
     return query_obj.filter(
         or_(
             Issue.title.ilike(q),

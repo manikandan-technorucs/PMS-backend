@@ -39,7 +39,7 @@ def update_task_list(db: Session, task_list_id: int, task_list_update: TaskListU
     db_task_list = db.query(TaskList).filter(TaskList.id == task_list_id).first()
     if not db_task_list:
         return None
-    
+
     update_data = task_list_update.model_dump(exclude_unset=True)
     changes = capture_audit_details(db_task_list, update_data)
 
@@ -50,7 +50,7 @@ def update_task_list(db: Session, task_list_id: int, task_list_update: TaskListU
                 resource_id=db_task_list.project_id or task_list_id,
                 record_id=task_list_id,
                 details=changes)
-        
+
     db.commit()
     db.refresh(db_task_list)
     return get_task_list(db, db_task_list.id)

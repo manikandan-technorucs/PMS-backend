@@ -38,7 +38,7 @@ def create_timelogs_bulk(
         auto_populate_timelog(log, current_user)
         if is_employee_only(current_user):
             log.user_email = current_user.email
-            
+
     return timelog_service.create_timelogs_bulk(
         db=db,
         timelogs=bulk.logs,

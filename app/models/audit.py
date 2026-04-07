@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from typing import List, Optional
 import uuid
@@ -26,11 +25,11 @@ class AuditLogs(Base):
     ID: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     TableName: Mapped[str] = mapped_column(String(250), nullable=False)
     Action: Mapped[int] = mapped_column(Integer, nullable=False)
-    PerformedBy: Mapped[uuid.UUID] = mapped_column(nullable=False) # usually mapping to uniqueidentifier
-    PerformedOn: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False) # datetime2(7)
+    PerformedBy: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    PerformedOn: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
     RecordName: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     TransactionId: Mapped[uuid.UUID] = mapped_column(nullable=False)
-    Comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # nvarchar(max)
+    Comments: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ModuleName: Mapped[Optional[str]] = mapped_column(String(250), nullable=True)
 
     details: Mapped[List["AuditLogDetails"]] = relationship(
@@ -45,8 +44,8 @@ class AuditLogDetails(Base):
     Id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     AuditLogId: Mapped[int] = mapped_column(BigInteger, ForeignKey("AuditLogs.ID"), nullable=False)
     FieldName: Mapped[str] = mapped_column(String(250), nullable=False)
-    OldValue: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # nvarchar(max)
-    NewValue: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # nvarchar(max)
+    OldValue: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    NewValue: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ValueType: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     audit_log: Mapped["AuditLogs"] = relationship(back_populates="details")

@@ -14,7 +14,7 @@ router = APIRouter(dependencies=[Depends(allow_authenticated)])
 
 @router.post("/", response_model=TaskResponse, dependencies=[Depends(allow_team_lead_plus)])
 def create_task(
-    task: TaskCreate, 
+    task: TaskCreate,
     db: Session = Depends(get_db),
     current_user = Depends(allow_team_lead_plus)
 ):
@@ -40,9 +40,9 @@ def search_tasks(
 
 @router.get("/", response_model=TaskListResponse)
 def read_tasks(
-    skip: int = 0, 
-    limit: int = 100, 
-    project_id: Optional[int] = None, 
+    skip: int = 0,
+    limit: int = 100,
+    project_id: Optional[int] = None,
     status_id: Optional[List[int]] = Query(None),
     priority_id: Optional[List[int]] = Query(None),
     assignee_email: Optional[List[str]] = Query(None),
@@ -54,9 +54,9 @@ def read_tasks(
         assignee_email = [current_user.email]
 
     return task_service.get_tasks(
-        db, 
-        skip=skip, 
-        limit=limit, 
+        db,
+        skip=skip,
+        limit=limit,
         project_id=project_id,
         status_ids=status_id,
         priority_ids=priority_id,
@@ -79,7 +79,7 @@ def update_task(task_id: int, task: TaskUpdate, db: Session = Depends(get_db), c
         raise HTTPException(status_code=404, detail="Task not found")
     if is_employee_only(current_user) and db_task.assignee_email != current_user.email:
         raise HTTPException(status_code=403, detail="Access denied: you can only update tasks assigned to you.")
-    
+
     updated = task_service.update_task(db, task_id=task_id, task_update=task, actor_id=current_user.o365_id or str(current_user.id))
     if updated is None:
         raise HTTPException(status_code=404, detail="Task not found")

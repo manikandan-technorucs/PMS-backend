@@ -16,8 +16,8 @@ def get_project(db: Session, project_id: int):
     ).filter(Project.id == project_id).first()
 
 def get_projects(
-    db: Session, 
-    skip: int = 0, 
+    db: Session,
+    skip: int = 0,
     limit: int = 100,
     status_ids: Optional[List[int]] = None,
     priority_ids: Optional[List[int]] = None,
@@ -32,7 +32,7 @@ def get_projects(
         joinedload(Project.status),
         joinedload(Project.priority)
     )
-    
+
     if current_user is not None:
         query = query.join(pu_table, pu_table.c.project_id == Project.id).filter(
             pu_table.c.user_id == current_user.id
@@ -44,7 +44,7 @@ def get_projects(
         query = query.filter(Project.priority_id.in_(priority_ids))
     if manager_emails:
         query = query.filter(Project.manager_email.in_(manager_emails))
-        
+
     return query.offset(skip).limit(limit).all()
 
 def create_project(db: Session, project: ProjectCreate, actor_id: str):
@@ -66,7 +66,7 @@ def create_project(db: Session, project: ProjectCreate, actor_id: str):
         db_project.users = users
 
     db.add(db_project)
-    db.flush() # Get ID for audit log
+    db.flush()
 
     write_audit(
         db,
@@ -87,29 +87,29 @@ def update_project(db: Session, project_id: int, project_update: ProjectUpdate, 
     db_project = db.query(Project).filter(Project.id == project_id).first()
     if not db_project:
         return None
-    
+
     update_data = project_update.model_dump(exclude_unset=True)
     if not update_data:
         return db_project
 
     if "status_id" in update_data and update_data["status_id"] != db_project.status_id:
-        update_data["previous_status"] = db_project.status_id  # store old integer FK value
+        update_data["previous_status"] = db_project.status_id
 
     changes = capture_audit_details(db_project, update_data)
 
     for key, value in update_data.items():
         setattr(db_project, key, value)
-    
+
     if hasattr(project_update, 'user_emails') and project_update.user_emails is not None:
         users = db.query(User).filter(User.email.in_(project_update.user_emails)).all()
         db_project.users = users
-        
+
     if actor_id:
         write_audit(db, actor_id, "UPDATE", "projects", project_id, project_id, changes)
 
     db.commit()
     db.refresh(db_project)
-    
+
     return get_project(db, db_project.id)
 
 def delete_project(db: Session, project_id: int, actor_id: str):
@@ -143,7 +143,7 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
         else:
             public_id = generate_public_id("USR-")
             employee_id = generate_public_id("EMP-")
-            
+
             name_parts = (display_name or "New User").split(" ", 1)
             first_name = name_parts[0]
             last_name = name_parts[1] if len(name_parts) > 1 else "User"
@@ -171,7 +171,7 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
     ).first()
 
     if existing:
-        return True  # Already assigned — idempotent
+        return True
 
     db.execute(
         insert(project_users).values(
@@ -185,7 +185,7 @@ def add_user_to_project(db: Session, project_id: int, user_id: str, user_email: 
     effective_actor_id = actor_id or "system"
 
     actor = db.query(User).filter(
-        (User.o365_id == actor_id) if actor_id else (User.id == -1)  # no-match if no actor_id
+        (User.o365_id == actor_id) if actor_id else (User.id == -1)
     ).first()
     actor_name = actor.display_name if actor else "Admin"
 
