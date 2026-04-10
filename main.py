@@ -12,7 +12,7 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.api.router import api_router
 from app.utils.exceptions import add_exception_handlers
-from app.models import *
+from app.models import *  # noqa: F401, F403 — registers all ORM models with Base.metadata
 from fastapi.staticfiles import StaticFiles
 
 if not os.path.exists("uploads"):
@@ -20,17 +20,27 @@ if not os.path.exists("uploads"):
 
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "development").lower() == "production"
 
-# Only run DDL sync in non-production (use Alembic migrations in production)
-if not IS_PRODUCTION:
-    Base.metadata.create_all(bind=engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Async startup: run DDL sync only in development.
+    Production must use `alembic upgrade head` before deployment.
+    """
+    if not IS_PRODUCTION:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    yield
+    # Graceful shutdown: dispose engine connection pool
+    await engine.dispose()
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    # Disable docs in production to avoid leaking API schema
-    docs_url=None if IS_PRODUCTION else "/docs",
-    redoc_url=None if IS_PRODUCTION else "/redoc",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json" if not IS_PRODUCTION else None,
+    title    = settings.PROJECT_NAME,
+    version  = settings.VERSION,
+    lifespan = lifespan,
+    docs_url    = None if IS_PRODUCTION else "/docs",
+    redoc_url   = None if IS_PRODUCTION else "/redoc",
+    openapi_url = f"{settings.API_V1_STR}/openapi.json" if not IS_PRODUCTION else None,
 )
 
 add_exception_handlers(app)
