@@ -27,7 +27,8 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = Field(alias="SECRET_KEY")
     ALGORITHM: str = "HS256"
-    #30 minutes expiry time
+    #Access token expire time is 30 minutes
+
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
