@@ -140,7 +140,6 @@ def update_issue(
 
     update_data = issue_update.model_dump(exclude_unset=True)
 
-    # ── Email-automation: detect status change ──────────────────────────────
     if "status_id" in update_data and update_data["status_id"] != db_issue.status_id:
         update_data["previous_status_id"] = db_issue.status_id
         update_data["is_processed"] = False
@@ -152,7 +151,7 @@ def update_issue(
     if "severity_id" in update_data and update_data["severity_id"] != db_issue.severity_id:
         update_data["is_processed"] = False
 
-    # Sync text labels from masters removed as VARCHAR columns are deprecated.
+   
 
 
 

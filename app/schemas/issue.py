@@ -66,7 +66,6 @@ class IssueUpdate(BaseModel):
     last_modified_time: Optional[datetime] = None
     estimated_hours: Optional[float] = None
 
-    # Email-automation
     previous_status_id: Optional[int] = None
     is_processed: Optional[bool]      = None
 
@@ -119,7 +118,6 @@ class IssueResponse(BaseModel):
     last_modified_time: Optional[datetime] = None
     estimated_hours: Optional[float]
 
-    # Email-automation fields
     is_processed: bool                  = False
     previous_status_id: Optional[int]   = None
 
