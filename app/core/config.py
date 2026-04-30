@@ -15,20 +15,18 @@ class Settings(BaseSettings):
 
     @property
     def DATABASE_URL(self) -> str:
-        import urllib.parse
-        encoded_password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
+        from urllib.parse import quote_plus
+        encoded_password = quote_plus(self.MYSQL_PASSWORD)
         return f"mysql+pymysql://{self.MYSQL_USER}:{encoded_password}@{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
 
     @property
     def ASYNC_DATABASE_URL(self) -> str:
-        import urllib.parse
-        encoded_password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
+        from urllib.parse import quote_plus
+        encoded_password = quote_plus(self.MYSQL_PASSWORD)
         return f"mysql+aiomysql://{self.MYSQL_USER}:{encoded_password}@{self.MYSQL_SERVER}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
 
     SECRET_KEY: str = Field(alias="SECRET_KEY")
     ALGORITHM: str = "HS256"
-    #Access token expire time is 30 minutes
-
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
@@ -40,8 +38,8 @@ class Settings(BaseSettings):
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
         elif isinstance(v, str) and v.startswith("["):
-            import json
-            return json.loads(v)
+            from json import loads
+            return loads(v)
         elif isinstance(v, list):
             return v
         return v

@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 import httpx
 
+from jose import jwt, JWTError
+
 from app.core.config import settings
 from app.core.database import get_sync_db
 from app.core.security import create_access_token, create_refresh_token, get_current_user
@@ -29,15 +31,15 @@ def _build_token_response(user: User) -> TokenResponse:
         access_token  = access_token,
         refresh_token = refresh_token,
         token_type    = "bearer",
-        user_id       = user.id,
-        public_id     = user.public_id,
-        email         = user.email,
-        first_name    = user.first_name,
-        last_name     = user.last_name,
-        display_name  = user.display_name,
-        role          = role_data,
-        is_external   = user.is_external,
-        is_synced     = user.is_synced,
+        user_id      = user.id,
+        public_id    = user.public_id,
+        email        = user.email,
+        first_name   = user.first_name,
+        last_name    = user.last_name,
+        display_name = user.display_name,
+        role         = role_data,
+        is_external  = user.is_external,
+        is_synced    = user.is_synced,
     )
 
 @router.post("/redirect", response_model=TokenResponse)
@@ -134,7 +136,6 @@ def get_current_user_profile(current_user: User = Depends(get_current_user)):
     }
 @router.post("/refresh", response_model=TokenResponse)
 def refresh_token(payload: RefreshTokenRequest, db: Session = Depends(get_sync_db)):
-    from jose import jwt, JWTError
     try:
         decoded = jwt.decode(payload.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         if decoded.get("type") != "refresh":
