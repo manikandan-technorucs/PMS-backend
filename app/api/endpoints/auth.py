@@ -75,7 +75,7 @@ def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_sync_db)):
             logger.info("[SSO] Token exchange successful")
     except httpx.HTTPStatusError as exc:
         logger.error("[SSO] MS token exchange failed: %s", exc.response.text)
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=f"Microsoft rejected code: {exc.response.text}")
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Microsoft rejected the authorization code.")
     except Exception as exc:
         logger.exception("[SSO] MS token exchange error")
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Failed to reach Microsoft.")
@@ -108,7 +108,7 @@ def ms_callback(payload: MSCallbackRequest, db: Session = Depends(get_sync_db)):
         logger.info("[SSO] User upsert successful: ID=%s", user.id)
     except Exception as exc:
         logger.exception("[SSO] Database upsert failed")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database synchronization failed: {str(exc)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database synchronization failed.")
 
     if user.is_deleted or not user.is_active:
         logger.warning("[SSO] Login blocked for inactive user: %s", user.email)

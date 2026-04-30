@@ -46,37 +46,12 @@ if IS_PRODUCTION:
 
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=[
-        "trucszohoreplicaapp.azurewebsites.net",
-        "*.azurewebsites.net",
-        "localhost",
-        "127.0.0.1",
-    ],
+    allowed_hosts=settings.ALLOWED_HOSTS,
 )
-
-_raw_origins: list[str] = [
-    "https://wonderful-sea-0d2c3fd00.1.azurestaticapps.net",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-]
-
-if settings.BACKEND_CORS_ORIGINS:
-    _raw_origins.extend([o.strip() for o in settings.BACKEND_CORS_ORIGINS])
-
-if IS_PRODUCTION:
-    _raw_origins = [o for o in _raw_origins if "azure" in o or "technorucs" in o or "azurestaticapps.net" in o]
-    if "https://wonderful-sea-0d2c3fd00.1.azurestaticapps.net" not in _raw_origins:
-        _raw_origins.append("https://wonderful-sea-0d2c3fd00.1.azurestaticapps.net")
-    
-    if not _raw_origins:
-        _raw_origins = ["https://trucszohoreplicaapp.azurewebsites.net"]
-
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_raw_origins,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[
@@ -93,7 +68,7 @@ app.add_middleware(
     max_age=600,
 )
 
-app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.PROXY_TRUSTED_HOSTS)
 
 class ForceHTTPSMiddleware:
     def __init__(self, app):

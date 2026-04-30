@@ -44,6 +44,22 @@ class Settings(BaseSettings):
             return v
         return v
 
+    ALLOWED_HOSTS: Union[list[str], str] = Field(default=["*"])
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def assemble_allowed_hosts(cls, v: Union[str, list[str]]) -> list[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",")]
+        elif isinstance(v, str) and v.startswith("["):
+            import json
+            return json.loads(v)
+        elif isinstance(v, list):
+            return v
+        return v
+
+    PROXY_TRUSTED_HOSTS: str = Field(default="127.0.0.1")
+
     AZURE_TENANT_ID: Optional[str] = None
     AZURE_CLIENT_ID: Optional[str] = None
     AZURE_CLIENT_SECRET: Optional[str] = None
