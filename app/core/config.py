@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     MYSQL_USER: str = Field(alias="DB_USER")
     MYSQL_PASSWORD: str = Field(alias="DB_PASSWORD")
-    MYSQL_SERVER: str = Field(alias="DB_SERVER", default="localhost")
+    MYSQL_SERVER: str = Field(alias="DB_SERVER")
     MYSQL_PORT: str = Field(alias="DB_PORT", default="3306")
     MYSQL_DB: str = Field(alias="DB_NAME")
 
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
             return v
         return v
 
-    PROXY_TRUSTED_HOSTS: str = Field(default="127.0.0.1")
+    PROXY_TRUSTED_HOSTS: str = Field(alias="PROXY_TRUSTED_HOSTS")
 
     DB_POOL_SIZE: int = Field(default=10)
     DB_MAX_OVERFLOW: int = Field(default=30)
@@ -66,7 +66,7 @@ class Settings(BaseSettings):
     DB_POOL_TIMEOUT: int = Field(default=20)
 
     GZIP_MINIMUM_SIZE: int = Field(default=1024)
-    APP_PORT: int = Field(default=8000)
+    APP_PORT: int = Field(alias="APP_PORT")
 
     MS_LOGIN_BASE_URL: str = Field(default="https://login.microsoftonline.com")
     MS_GRAPH_BASE_URL: str = Field(default="https://graph.microsoft.com")
