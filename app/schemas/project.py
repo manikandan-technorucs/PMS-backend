@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.project import BillingModel, ProjectType
 from app.schemas.user import UserBase
 from app.schemas.masters import MasterResponse, MasterLookupResponse
 
@@ -67,8 +66,8 @@ class ProjectCreate(BaseModel):
     customer_name: str      = Field(..., min_length=1)
     project_id_sync: str    = Field(..., min_length=1)
 
-    billing_model: BillingModel
-    project_type: ProjectType
+    billing_model: str
+    project_type: str
 
     expected_start_date: Optional[date] = None
     expected_end_date: Optional[date]   = None
@@ -112,8 +111,8 @@ class ProjectUpdate(BaseModel):
     client_name: Optional[str]        = None
     tags: Optional[str]               = None
 
-    billing_model: Optional[BillingModel]   = None
-    project_type: Optional[ProjectType]     = None
+    billing_model: Optional[str]   = None
+    project_type: Optional[str]    = None
     project_status_external: Optional[str]  = None
 
     expected_start_date: Optional[date] = None
@@ -171,8 +170,8 @@ class ProjectResponse(BaseModel):
     client_name: Optional[str] = None
     tags: Optional[str]        = None
 
-    billing_model: BillingModel
-    project_type: ProjectType
+    billing_model: str
+    project_type: str
     project_status_external: Optional[str] = None
 
     expected_start_date: Optional[date] = None
