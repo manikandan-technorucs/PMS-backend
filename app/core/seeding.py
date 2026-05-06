@@ -46,6 +46,11 @@ def seed_master_lookups(db: Session):
     )).fetchall()
 
     deleted_count = 0
+    db.query(MasterLookup).filter(
+        MasterLookup.category == "ProjectType",
+        MasterLookup.label.in_(["Internal Project", "internal project", "Internal project"])
+    ).delete(synchronize_session=False)
+    
     for row in dup_check:
         cat, val, keep_id = row.category, row.value, row.keep_id
         dups = db.query(MasterLookup).filter(
