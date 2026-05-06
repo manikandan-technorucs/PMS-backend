@@ -25,26 +25,51 @@ def seed_simple_records(db: Session, model, data, name_field="name"):
 
 def seed_master_lookups(db: Session):
     lookups = {
-        "ProjectStatus": ["Active", "Completed", "On Hold", "Cancelled", "Planning"],
-        "TaskStatus":    ["Open", "In Progress", "In Review", "Completed", "Cancelled", "On Hold"],
-        "IssueStatus":   ["Open", "Active", "In Progress", "To Be Tested", "In Review", "Closed", "Re-Opened", "On Hold", "Cancelled"],
-        "Priority":      ["Low", "Medium", "High", "Critical"],
-        "Severity":      ["Low", "Medium", "High", "Critical"],
-        "Classification":["Feature", "Bug", "Enhancement", "Support"],
-        "ProjectType":   ["Internal", "External"],
-        "BillingType":   ["Billable", "Non-Billable"],
+        "ProjectStatus":      ["Planning", "Active", "In Progress", "On Hold", "Completed", "Closed", "Cancelled"],
+        "TaskStatus":         ["Open", "In Progress", "In Review", "Completed", "Cancelled", "On Hold"],
+        "TaskPriority":       ["Low", "Medium", "High", "Critical"],
+        "IssueStatus":        ["Open", "Active", "In Progress", "To Be Tested", "In Review", "Re-Opened", "On Hold", "Closed", "Cancelled"],
+        "IssueSeverity":      ["Low", "Medium", "High", "Critical", "Blocker", "Show Stopper"],
+        "IssueClassification":["None", "Security", "Crash/Hang", "Data Loss", "Performance", "UI/UX Usability", "Other Bugs", "Feature (New)", "Enhancement"],
+        "ProjectType":        ["Internal", "External"],
+        "ProjectBillingModel":["T&M", "Fixed Price", "Retainer", "Non-Billable"],
+        "TaskBillingType":    ["Billable", "Non-Billable", "Internal"],
+        "MilestoneStatus":    ["Planning", "Active", "In Progress", "On Hold", "Completed", "Cancelled"],
     }
-    
+
+    from sqlalchemy import text
+    dup_check = db.execute(text(
+        "SELECT category, value, MIN(id) as keep_id "
+        "FROM master_lookups "
+        "GROUP BY category, value "
+        "HAVING COUNT(*) > 1"
+    )).fetchall()
+
+    deleted_count = 0
+    for row in dup_check:
+        cat, val, keep_id = row.category, row.value, row.keep_id
+        dups = db.query(MasterLookup).filter(
+            MasterLookup.category == cat,
+            MasterLookup.value == val,
+            MasterLookup.id != keep_id
+        ).all()
+        for dup in dups:
+            db.delete(dup)
+            deleted_count += 1
+    if deleted_count:
+        db.commit()
+        logger.info(f"Deduplication: removed {deleted_count} duplicate MasterLookup rows.")
+
     total_inserted = 0
     total_skipped = 0
     for category, values in lookups.items():
-        for val in values:
+        for idx, val in enumerate(values):
             existing = db.query(MasterLookup).filter(
                 MasterLookup.category == category,
                 MasterLookup.value == val
             ).first()
             if not existing:
-                db.add(MasterLookup(category=category, label=val, value=val))
+                db.add(MasterLookup(category=category, label=val, value=val, order_index=idx))
                 total_inserted += 1
             else:
                 total_skipped += 1
@@ -93,19 +118,15 @@ def seed_all(reset=False):
         Base.metadata.create_all(bind=engine)
 
     with SessionLocal() as db:
-        # User Statuses
         u_added, u_skip = seed_simple_records(db, UserStatus, ["Active", "Inactive", "Pending", "Onboarding", "On Leave"])
         if u_added: logger.info(f"Added User Statuses: {u_added}")
         
-        # General Statuses
         s_added, s_skip = seed_simple_records(db, Status, ["Open", "In Progress", "In Review", "Completed", "Cancelled", "On Hold", "Planning", "Active", "Closed", "To Be Tested", "Re-Opened"])
         if s_added: logger.info(f"Added General Statuses: {s_added}")
         
-        # Priorities
         p_added, p_skip = seed_simple_records(db, Priority, ["Low", "Medium", "High", "Critical"])
         if p_added: logger.info(f"Added Priorities: {p_added}")
         
-        # Skills
         sk_added, sk_skip = seed_simple_records(db, Skill, ["React", "Python", "FastAPI", "UI/UX Design", "Node.js", ".NET", "DevOps", "Project Management", "Data Analytics"])
         if sk_added: logger.info(f"Added Skills: {sk_added}")
         

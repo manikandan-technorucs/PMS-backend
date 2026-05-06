@@ -40,6 +40,13 @@ def _compute_counts(db: Session, project_id: int) -> dict:
     task_count = db.execute(
         select(func.count()).where(Task.project_id == project_id, Task.is_deleted == False)
     ).scalar() or 0
+    
+    avg_completion = db.execute(
+        select(func.avg(Task.completion_percentage)).where(
+            Task.project_id == project_id, Task.is_deleted == False
+        )
+    ).scalar() or 0
+    
     issue_count = db.execute(
         select(func.count()).where(Issue.project_id == project_id, Issue.is_deleted == False)
     ).scalar() or 0
@@ -50,6 +57,7 @@ def _compute_counts(db: Session, project_id: int) -> dict:
         "task_count": task_count,
         "issue_count": issue_count,
         "milestone_count": milestone_count,
+        "completion_percentage": round(float(avg_completion)) if task_count > 0 else 0
     }
 
 
@@ -64,9 +72,16 @@ def _batch_enrich_projects(db: Session, projects: List[Project]) -> None:
         return
     project_ids = [p.id for p in projects]
     
-    task_counts = dict(db.execute(
-        select(Task.project_id, func.count()).where(Task.project_id.in_(project_ids), Task.is_deleted == False).group_by(Task.project_id)
-    ).all())
+    task_stats = db.execute(
+        select(
+            Task.project_id, 
+            func.count(Task.id),
+            func.avg(Task.completion_percentage)
+        ).where(Task.project_id.in_(project_ids), Task.is_deleted == False).group_by(Task.project_id)
+    ).all()
+    
+    task_counts = {row[0]: row[1] for row in task_stats}
+    task_pcts = {row[0]: round(float(row[2] or 0)) for row in task_stats}
     
     issue_counts = dict(db.execute(
         select(Issue.project_id, func.count()).where(Issue.project_id.in_(project_ids), Issue.is_deleted == False).group_by(Issue.project_id)
@@ -81,6 +96,7 @@ def _batch_enrich_projects(db: Session, projects: List[Project]) -> None:
             "task_count": task_counts.get(p.id, 0),
             "issue_count": issue_counts.get(p.id, 0),
             "milestone_count": milestone_counts.get(p.id, 0),
+            "completion_percentage": task_pcts.get(p.id, 0),
         })
 
 

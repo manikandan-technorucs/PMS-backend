@@ -217,6 +217,7 @@ class ProjectResponse(BaseModel):
     task_count: int      = 0
     issue_count: int     = 0
     milestone_count: int = 0
+    completion_percentage: int = 0
 
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

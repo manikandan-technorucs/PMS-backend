@@ -56,7 +56,6 @@ class AuditMixin:
 
 
 def ensure_database_exists():
-    """Connect to MySQL server without database and create it if missing."""
     try:
         encoded_password = quote_plus(settings.MYSQL_PASSWORD)
         server_url = f"mysql+pymysql://{settings.MYSQL_USER}:{encoded_password}@{settings.MYSQL_SERVER}:{settings.MYSQL_PORT}/"
