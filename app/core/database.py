@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Generator
 
+from datetime import datetime, timezone
 from sqlalchemy import Column, Boolean, DateTime, create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from sqlalchemy.sql import func
@@ -40,15 +41,15 @@ Base = declarative_base()
 
 class AuditMixin:
     created_at = Column(
-        DateTime(timezone=True),
-        default=func.now(),
-        server_default=func.now(),
+        DateTime(timezone=False),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        server_default=func.utc_timestamp(),
         nullable=False,
     )
     updated_at = Column(
-        DateTime(timezone=True),
+        DateTime(timezone=False),
         default=None,
-        onupdate=func.now(),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         nullable=True,
     )
     is_active  = Column(Boolean, default=True,  nullable=False)

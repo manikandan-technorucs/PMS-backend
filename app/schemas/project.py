@@ -8,13 +8,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.schemas.user import UserBase
 from app.schemas.masters import MasterResponse, MasterLookupResponse
 from app.schemas.document import DocumentResponse
+from app.schemas.base import BaseSchema
 
 
 
 
 
 
-class ProjectMemberResponse(BaseModel):
+class ProjectMemberResponse(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
     project_id: int
@@ -159,7 +160,7 @@ class ProjectSyncUpdate(BaseModel):
 
 
 
-class ProjectResponse(BaseModel):
+class ProjectResponse(BaseSchema):
     model_config = ConfigDict(from_attributes=True)
 
     id: int

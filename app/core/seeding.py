@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 from app.core.database import SessionLocal, engine, Base
 from app.models.masters import UserStatus, Skill, Status, Priority
 from app.models.roles import Role
-from app.models.user import User
 from app.models.master import MasterLookup
 
 logger = logging.getLogger("app.seeding")
@@ -90,31 +89,6 @@ def seed_roles(db: Session):
             logger.info(f"Added Role: {r_name}")
     db.commit()
 
-def seed_admin_user(db: Session):
-    email = "test1@technorucspltd.onmicrosoft.com"
-    user = db.query(User).filter(User.email == email).first()
-    if not user:
-        from app.utils.ids import generate_public_id
-        admin_role = db.query(Role).filter(Role.name == "Super Admin").first()
-        active_status = db.query(UserStatus).filter(UserStatus.name == "Active").first()
-        
-        new_user = User(
-            public_id    = generate_public_id("USR-"),
-            employee_id  = generate_public_id("EMP-"),
-            first_name   = "TechnoRUCS",
-            last_name    = "Admin",
-            email        = email,
-            username     = "admin",
-            display_name = "System Administrator",
-            is_synced    = True,
-            role_id      = admin_role.id if admin_role else None,
-            status_id    = active_status.id if active_status else None
-        )
-        db.add(new_user)
-        db.commit()
-        logger.info(f"Created default admin user: {email}")
-    else:
-        logger.info(f"Admin user already exists: {email}")
 
 def seed_all(reset=False):
     if reset:
@@ -137,6 +111,5 @@ def seed_all(reset=False):
         
         seed_roles(db)
         seed_master_lookups(db)
-        seed_admin_user(db)
         
     logger.info("Database seeding completed successfully.")
