@@ -8,6 +8,8 @@ from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from app.core.config import settings
 from app.core.logging_config import logger
@@ -89,6 +91,15 @@ app.add_middleware(
     expose_headers=settings.CORS_EXPOSE_HEADERS,
     max_age=600,
 )
+
+class PNAMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        if request.method == "OPTIONS" and "access-control-request-private-network" in request.headers:
+            response.headers["Access-Control-Allow-Private-Network"] = "true"
+        return response
+
+app.add_middleware(PNAMiddleware)
 
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.PROXY_TRUSTED_HOSTS)
 
