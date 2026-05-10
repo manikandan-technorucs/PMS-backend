@@ -84,7 +84,7 @@ class SearchService:
             for t in tasks
         )
         search_results.extend(
-            {"type": "issue", "id": i.id, "public_id": i.public_id, "name": f"[Issue] {i.bug_name}", "title": i.bug_name}
+            {"type": "issue", "id": i.id, "public_id": i.public_id, "name": i.bug_name, "title": i.bug_name}
             for i in issues
         )
         return search_results
