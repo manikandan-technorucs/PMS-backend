@@ -68,11 +68,69 @@ def search_priorities(q: str = Query(..., min_length=1), limit: int = 20, db: Se
 
 @router.get("/roles", response_model=List[RoleResponse])
 def read_roles(db: Session = Depends(get_sync_db)):
-    return master_service.get_roles(db)
+    from sqlalchemy import func, select
+    from app.models.user import User
+    from app.models.roles import Role as RoleModel
+
+    user_count_sq = (
+        select(User.role_id, func.count(User.id).label("cnt"))
+        .where(User.role_id.isnot(None))
+        .group_by(User.role_id)
+        .subquery()
+    )
+    rows = db.execute(
+        select(RoleModel, func.coalesce(user_count_sq.c.cnt, 0).label("users_count"))
+        .outerjoin(user_count_sq, RoleModel.id == user_count_sq.c.role_id)
+    ).all()
+
+    seen = set()
+    result = []
+    for role, uc in rows:
+        n = role.name.strip().lower()
+        if n not in seen:
+            seen.add(n)
+            result.append({
+                "id": role.id,
+                "name": role.name,
+                "description": role.description,
+                "permissions": role.permissions or {},
+                "users_count": uc,
+            })
+    return result
 
 @router.get("/roles/search", response_model=List[RoleResponse])
 def search_roles(q: str = Query(..., min_length=1), limit: int = 20, db: Session = Depends(get_sync_db)):
-    return master_service.search_roles(db, q, limit)
+    from sqlalchemy import func, select
+    from app.models.user import User
+    from app.models.roles import Role as RoleModel
+
+    user_count_sq = (
+        select(User.role_id, func.count(User.id).label("cnt"))
+        .where(User.role_id.isnot(None))
+        .group_by(User.role_id)
+        .subquery()
+    )
+    rows = db.execute(
+        select(RoleModel, func.coalesce(user_count_sq.c.cnt, 0).label("users_count"))
+        .outerjoin(user_count_sq, RoleModel.id == user_count_sq.c.role_id)
+        .where(RoleModel.name.ilike(f"%{q}%"))
+        .limit(limit)
+    ).all()
+
+    seen = set()
+    result = []
+    for role, uc in rows:
+        n = role.name.strip().lower()
+        if n not in seen:
+            seen.add(n)
+            result.append({
+                "id": role.id,
+                "name": role.name,
+                "description": role.description,
+                "permissions": role.permissions or {},
+                "users_count": uc,
+            })
+    return result
 
 @router.get("/roles/{role_id}", response_model=RoleWithUsersResponse)
 def read_role(role_id: int, db: Session = Depends(get_sync_db)):

@@ -55,7 +55,9 @@ def get_skills(db: Session) -> List[Skill]:
     return unique
 
 def get_roles(db: Session) -> List[Role]:
-    items = (db.execute(select(Role))).scalars().all()
+    items = (
+        db.execute(select(Role).options(selectinload(Role.users)))
+    ).scalars().all()
     seen = set()
     unique = []
     for item in items:
@@ -72,7 +74,12 @@ def get_role(db: Session, role_id: int) -> Optional[Role]:
     return result.scalar_one_or_none()
 
 def create_role(db: Session, role: dict) -> Role:
+    from fastapi import HTTPException
     user_ids = role.pop("user_ids", [])
+    # Check for duplicate name before attempting insert
+    existing = db.execute(select(Role).where(Role.name == role["name"])).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=400, detail=f"A role named '{role['name']}' already exists.")
     db_role = Role(**role)
     db.add(db_role)
     db.flush()
