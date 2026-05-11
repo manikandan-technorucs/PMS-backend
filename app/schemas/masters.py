@@ -39,6 +39,9 @@ class RoleUpdate(BaseModel):
     permissions: Optional[Dict[str, Any]] = None
     user_ids: Optional[List[int]] = None
 
+class BulkRolePermissionsUpdate(BaseModel):
+    role_permissions: Dict[int, Dict[str, Any]]
+
 class RoleResponse(RoleBase):
     id: int
     users_count: Optional[int] = 0

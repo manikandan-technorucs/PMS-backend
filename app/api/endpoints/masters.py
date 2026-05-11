@@ -4,7 +4,7 @@ from typing import List
 
 from app.core.database import get_sync_db
 from app.core.security import allow_authenticated
-from app.schemas.masters import MasterResponse, RoleResponse, SkillResponse, RoleCreate, RoleUpdate, MasterLookupResponse
+from app.schemas.masters import MasterResponse, RoleResponse, SkillResponse, RoleCreate, RoleUpdate, MasterLookupResponse, BulkRolePermissionsUpdate
 from app.schemas.user import RoleWithUsersResponse
 from app.services import master_service
 
@@ -153,6 +153,14 @@ def delete_role(role_id: int, db: Session = Depends(get_sync_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Role not found")
     return {"message": "Role deleted successfully"}
+
+@router.post("/roles/bulk-permissions")
+def update_bulk_role_permissions(update_data: BulkRolePermissionsUpdate, db: Session = Depends(get_sync_db)):
+    try:
+        master_service.update_bulk_role_permissions(db, update_data.role_permissions)
+        return {"message": "Permissions updated successfully for all roles"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/roles/{role_id}/users/{user_email}")
 def assign_user_to_role(role_id: int, user_email: str, db: Session = Depends(get_sync_db)):

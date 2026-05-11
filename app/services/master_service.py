@@ -145,3 +145,9 @@ def search_skills(db: Session, query: str, limit: int = 20) -> List[Skill]:
     if not query:
         return []
     return (db.execute(select(Skill).where(Skill.name.ilike(f"%{query}%")).limit(limit))).scalars().all()
+
+def update_bulk_role_permissions(db: Session, role_permissions: dict):
+    for role_id_str, perms in role_permissions.items():
+        role_id = int(role_id_str)
+        db.execute(sa_update(Role).where(Role.id == role_id).values(permissions=perms))
+    db.commit()
