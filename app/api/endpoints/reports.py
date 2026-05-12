@@ -16,9 +16,14 @@ import io
 router = APIRouter(dependencies=[Depends(allow_authenticated)])
 
 @router.get("/summary")
-def get_report_summary(db: Session = Depends(get_sync_db)):
-    
-    proj_row = db.query(
+def get_report_summary(
+    db: Session = Depends(get_sync_db),
+    current_user = Depends(allow_authenticated)
+):
+    from app.core.security import ROLE_ADMIN
+    is_admin = current_user.role and current_user.role.name == ROLE_ADMIN
+
+    proj_query = db.query(
         func.count(Project.id).label("total"),
         func.sum(
             case(
@@ -26,16 +31,45 @@ def get_report_summary(db: Session = Depends(get_sync_db)):
                 else_=0,
             )
         ).label("active")
-    ).outerjoin(MasterLookup, Project.status_id == MasterLookup.id).one()
+    ).outerjoin(MasterLookup, Project.status_id == MasterLookup.id)
 
-    task_total = db.query(func.count(Task.id)).scalar() or 0
-    task_completed = db.query(func.count(Task.id)).join(Task.status_master).filter(MasterLookup.label == "Completed").scalar() or 0
+    if not is_admin:
+        from app.models.project import ProjectMember
+        proj_query = proj_query.join(ProjectMember, ProjectMember.project_id == Project.id).filter(ProjectMember.user_id == current_user.id)
 
-    issue_total = db.query(func.count(Issue.id)).scalar() or 0
-    issue_open = db.query(func.count(Issue.id)).join(Issue.status_master).filter(MasterLookup.label.notin_(["Completed", "Closed", "Resolved"])).scalar() or 0
+    proj_row = proj_query.one()
 
-    total_hours_logged = db.query(func.sum(TimeLog.daily_log_hours)).scalar() or 0.0
-    total_milestones   = db.query(func.count(Milestone.id)).scalar() or 0
+    task_query = db.query(func.count(Task.id))
+    task_comp_query = db.query(func.count(Task.id)).join(Task.status_master).filter(MasterLookup.label == "Completed")
+
+    if not is_admin:
+        task_query = task_query.filter(Task.assignees.any(id=current_user.id))
+        task_comp_query = task_comp_query.filter(Task.assignees.any(id=current_user.id))
+
+    task_total = task_query.scalar() or 0
+    task_completed = task_comp_query.scalar() or 0
+
+    issue_query = db.query(func.count(Issue.id))
+    issue_open_query = db.query(func.count(Issue.id)).join(Issue.status_master).filter(MasterLookup.label.notin_(["Completed", "Closed", "Resolved"]))
+
+    if not is_admin:
+        issue_query = issue_query.filter(Issue.assignee_id == current_user.id)
+        issue_open_query = issue_open_query.filter(Issue.assignee_id == current_user.id)
+
+    issue_total = issue_query.scalar() or 0
+    issue_open = issue_open_query.scalar() or 0
+
+    hours_query = db.query(func.sum(TimeLog.daily_log_hours))
+    if not is_admin:
+        hours_query = hours_query.filter(TimeLog.user_id == current_user.id)
+    
+    total_hours_logged = hours_query.scalar() or 0.0
+
+    milestone_query = db.query(func.count(Milestone.id))
+    if not is_admin:
+        milestone_query = milestone_query.join(Project).join(Project.team_members).filter(ProjectMember.user_id == current_user.id)
+    
+    total_milestones = milestone_query.scalar() or 0
 
     return {
         "total_projects":    proj_row.total  or 0,

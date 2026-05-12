@@ -368,8 +368,9 @@ def update_project(
                 ))
 
 
+        exempt_uids = {db_project.owner_id, db_project.project_manager_id, db_project.delivery_head_id}
         for m in existing_members:
-            if m.user_id not in new_user_ids and m.user_id != db_project.owner_id:
+            if m.user_id not in new_user_ids and m.user_id not in exempt_uids:
                 db.delete(m)
 
     roles_to_ensure = []
