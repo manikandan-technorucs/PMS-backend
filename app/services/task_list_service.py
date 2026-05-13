@@ -39,15 +39,15 @@ def create_task_list(
 ) -> TaskList:
     from sqlalchemy import func
     
-    # Trim and normalize name
     clean_name = task_list.name.strip()
     
-    existing = db.execute(
-        select(TaskList).where(
-            func.lower(TaskList.name) == func.lower(clean_name),
-            TaskList.project_id == task_list.project_id
-        )
-    ).scalar_one_or_none()
+    stmt = select(TaskList).where(TaskList.name.ilike(clean_name))
+    if task_list.project_id is not None:
+        stmt = stmt.where(TaskList.project_id == task_list.project_id)
+    else:
+        stmt = stmt.where(TaskList.project_id.is_(None))
+        
+    existing = db.execute(stmt).scalars().first()
     
     if existing:
         return existing

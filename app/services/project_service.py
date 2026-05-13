@@ -568,9 +568,12 @@ def clone_from_template(
     template_id: int,
 ) -> None:
     from app.utils.ids import get_next_sequence_id
+    from app.services.task_list_service import get_or_create_general_list
     
     project = db.execute(select(Project).where(Project.id == project_id)).scalar_one_or_none()
     project_name = project.project_name if project else ""
+
+    general_list = get_or_create_general_list(db, project_id)
 
     tmpl_tasks_result = db.execute(
         select(TemplateTask)
@@ -586,6 +589,7 @@ def clone_from_template(
             task_name       = tt.title,
             description     = tt.description,
             project_id      = project_id,
+            task_list_id    = general_list.id,
             estimated_hours = tt.estimated_hours,
             duration        = tt.duration,
             billing_type    = tt.billing_type or "Billable",
