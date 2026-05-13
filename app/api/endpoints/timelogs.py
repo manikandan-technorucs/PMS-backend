@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, allow_time_create, allow_time_view
+from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_time_create, allow_time_view
 from app.core.dependencies import auto_populate_timelog
 from app.schemas.timelog import TimeLogCreate, TimeLogUpdate, TimeLogResponse, TimeLogBulkCreate
 from app.services import timelog_service
@@ -19,7 +19,7 @@ def create_timelog(
 ):
 
     auto_populate_timelog(timelog, current_user)
-    if is_employee_only(current_user):
+    if not is_full_access(current_user):
         timelog.user_id = current_user.id
 
     return timelog_service.create_timelog(
@@ -38,7 +38,7 @@ def create_timelogs_bulk(
 ):
     for log in bulk.logs:
         auto_populate_timelog(log, current_user)
-        if is_employee_only(current_user):
+        if not is_full_access(current_user):
             log.user_id = current_user.id
 
     return timelog_service.create_timelogs_bulk(
@@ -66,7 +66,7 @@ def read_timelogs(
         project_id=project_id,
         task_id=task_id,
         issue_id=issue_id,
-        current_user=current_user if is_employee_only(current_user) else None,
+        current_user=current_user if not is_full_access(current_user) else None,
     )
 
 

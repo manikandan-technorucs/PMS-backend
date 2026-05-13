@@ -17,6 +17,7 @@ from app.core.security import (
     check_project_owner_or_pm,
     check_project_owner_or_lead,
     is_employee_only,
+    is_full_access,
 )
 from app.schemas.project import (
     ProjectCreate,
@@ -158,7 +159,7 @@ def read_projects(
         is_template=is_template,
         include_all=include_all,
         search=search,
-        current_user=current_user if is_employee_only(current_user) else None,
+        current_user=current_user if not is_full_access(current_user) else None,
     )
 
 
@@ -173,7 +174,7 @@ def read_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
 
-    if is_employee_only(current_user):
+    if not is_full_access(current_user):
         member_ids = {m.user_id for m in db_project.team_members}
         if current_user.id not in member_ids:
             raise HTTPException(

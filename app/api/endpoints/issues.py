@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, allow_issue_create, allow_issue_view, allow_issue_delete
+from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_issue_create, allow_issue_view, allow_issue_delete
 from app.schemas.issue import IssueCreate, IssueUpdate, IssueResponse, IssueListResponse
 from app.services import issue_service
 
@@ -67,12 +67,29 @@ def read_issues(
     severity_id: Optional[List[int]] = Query(None),
     assignee_email: Optional[List[str]] = Query(None),
     search: Optional[str] = None,
+    milestone_id: Optional[int] = Query(None),
     db: Session = Depends(get_sync_db),
+
     current_user=Depends(allow_issue_view),
 ):
 
-    if is_employee_only(current_user):
-        assignee_email = [current_user.email]
+    if not is_full_access(current_user):
+        if project_id:
+            from app.models.project import ProjectMember
+            from sqlalchemy import select
+            is_member = db.execute(
+                select(ProjectMember).where(
+                    ProjectMember.project_id == project_id,
+                    ProjectMember.user_id == current_user.id
+                )
+            ).first() is not None
+            
+            if not is_member:
+                assignee_email = [current_user.email]
+            else:
+                assignee_email = None
+        else:
+            assignee_email = [current_user.email]
 
     return issue_service.get_issues(
         db,
@@ -84,7 +101,9 @@ def read_issues(
         severity_ids=severity_id,
         assignee_emails=assignee_email,
         search=search,
+        milestone_id=milestone_id,
     )
+
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)

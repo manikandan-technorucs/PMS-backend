@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case
+from sqlalchemy import func, case, or_
 from app.core.database import get_sync_db
 from app.core.security import allow_authenticated
 from app.models.project import Project
@@ -20,8 +20,9 @@ def get_report_summary(
     db: Session = Depends(get_sync_db),
     current_user = Depends(allow_authenticated)
 ):
-    from app.core.security import ROLE_ADMIN
+    from app.core.security import ROLE_ADMIN, ROLE_TEAM_LEAD
     is_admin = current_user.role and current_user.role.name == ROLE_ADMIN
+    is_team_lead = current_user.role and current_user.role.name == ROLE_TEAM_LEAD
 
     proj_query = db.query(
         func.count(Project.id).label("total"),
@@ -43,8 +44,25 @@ def get_report_summary(
     task_comp_query = db.query(func.count(Task.id)).join(Task.status_master).filter(MasterLookup.label == "Completed")
 
     if not is_admin:
-        task_query = task_query.filter(Task.assignees.any(id=current_user.id))
-        task_comp_query = task_comp_query.filter(Task.assignees.any(id=current_user.id))
+        if is_team_lead:
+            from app.models.project import ProjectMember
+            task_query = task_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+            task_comp_query = task_comp_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+        else:
+            task_query = task_query.filter(
+                or_(
+                    Task.assignee_id == current_user.id,
+                    Task.assignees.any(id=current_user.id),
+                    Task.owners.any(id=current_user.id)
+                )
+            )
+            task_comp_query = task_comp_query.filter(
+                or_(
+                    Task.assignee_id == current_user.id,
+                    Task.assignees.any(id=current_user.id),
+                    Task.owners.any(id=current_user.id)
+                )
+            )
 
     task_total = task_query.scalar() or 0
     task_completed = task_comp_query.scalar() or 0
@@ -53,8 +71,24 @@ def get_report_summary(
     issue_open_query = db.query(func.count(Issue.id)).join(Issue.status_master).filter(MasterLookup.label.notin_(["Completed", "Closed", "Resolved"]))
 
     if not is_admin:
-        issue_query = issue_query.filter(Issue.assignee_id == current_user.id)
-        issue_open_query = issue_open_query.filter(Issue.assignee_id == current_user.id)
+        if is_team_lead:
+
+            from app.models.project import ProjectMember
+            issue_query = issue_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+            issue_open_query = issue_open_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+        else:
+            issue_query = issue_query.filter(
+                or_(
+                    Issue.assignee_id == current_user.id,
+                    Issue.assignees.any(id=current_user.id)
+                )
+            )
+            issue_open_query = issue_open_query.filter(
+                or_(
+                    Issue.assignee_id == current_user.id,
+                    Issue.assignees.any(id=current_user.id)
+                )
+            )
 
     issue_total = issue_query.scalar() or 0
     issue_open = issue_open_query.scalar() or 0

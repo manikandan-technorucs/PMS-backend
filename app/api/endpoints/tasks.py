@@ -14,7 +14,9 @@ from app.core.security import (
     allow_task_delete,
     check_task_owner_or_lead,
     is_employee_only,
+    is_full_access,
 )
+from sqlalchemy import select
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
 from app.services import task_service
 
@@ -72,12 +74,30 @@ def read_tasks(
     assignee_email: Optional[List[str]] = Query(None),
     status: Optional[str] = Query(None),
     priority: Optional[str] = Query(None),
+    milestone_id: Optional[int] = Query(None),
     db: Session = Depends(get_sync_db),
+
     current_user=Depends(allow_task_view),
 ):
 
-    if is_employee_only(current_user):
-        assignee_email = [current_user.email]
+    if not is_full_access(current_user):
+        if project_id:
+            from app.models.project import ProjectMember
+            is_member = db.execute(
+                select(ProjectMember).where(
+                    ProjectMember.project_id == project_id,
+                    ProjectMember.user_id == current_user.id
+                )
+            ).first() is not None
+            
+            if not is_member:
+                assignee_email = [current_user.email]
+            else:
+                # Member of project, see all project tasks
+                assignee_email = None
+        else:
+            # Global list, see only assigned
+            assignee_email = [current_user.email]
 
     return task_service.get_tasks(
         db,
@@ -86,7 +106,9 @@ def read_tasks(
         project_id=project_id,
         status=status,
         priority=priority,
+        milestone_id=milestone_id,
         assignee_emails=assignee_email,
+
     )
 
 

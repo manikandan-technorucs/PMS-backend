@@ -37,6 +37,17 @@ def create_task_list(
     task_list: TaskListCreate,
     actor_id: Optional[str] = None,
 ) -> TaskList:
+    from sqlalchemy import func
+    existing = db.execute(
+        select(TaskList).where(
+            func.lower(TaskList.name) == func.lower(task_list.name),
+            TaskList.project_id == task_list.project_id
+        )
+    ).scalar_one_or_none()
+    
+    if existing:
+        return existing
+
     db_tl = TaskList(
         name         = task_list.name,
         description  = task_list.description,

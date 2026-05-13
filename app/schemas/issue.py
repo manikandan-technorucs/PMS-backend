@@ -143,8 +143,14 @@ class IssueResponse(BaseSchema):
     documents: List[DocumentResponse] = Field(default_factory=list)
 
 
+class IssueStats(BaseModel):
+    open: int = 0
+    in_progress: int = 0
+    closed: int = 0
+
 class IssueListResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     total: int
     items: List[IssueResponse]
+    stats: Optional[IssueStats] = None

@@ -11,6 +11,8 @@ from app.schemas.task import TaskCreate, TaskUpdate
 from app.utils.ids import generate_public_id, get_next_sequence_id
 from app.models.project import Project
 from app.utils.audit_utils import capture_audit_details, write_audit
+from app.models.master import MasterLookup
+
 
 
 def _task_query():
@@ -48,11 +50,16 @@ def get_tasks(
     assignee_emails: Optional[List[str]] = None,
     status: Optional[str] = None,
     priority: Optional[str] = None,
+    milestone_id: Optional[int] = None,
 ) -> dict:
+
     stmt = _task_query()
 
     if project_id is not None:
         stmt = stmt.where(Task.project_id == project_id)
+    if milestone_id is not None:
+        stmt = stmt.where(Task.milestone_id == milestone_id)
+
     if status_ids:
         stmt = stmt.where(Task.status_id.in_(status_ids))
     if priority_ids:
@@ -60,9 +67,12 @@ def get_tasks(
 
 
     if assignee_emails:
-        stmt = (
-            stmt.join(User, User.id == Task.assignee_id)
-            .where(User.email.in_(assignee_emails))
+        stmt = stmt.join(User, User.id == Task.assignee_id, isouter=True).where(
+            or_(
+                User.email.in_(assignee_emails),
+                Task.assignees.any(User.email.in_(assignee_emails)),
+                Task.owners.any(User.email.in_(assignee_emails))
+            )
         )
 
     count_stmt = select(func.count()).select_from(stmt.subquery())
@@ -131,6 +141,16 @@ def create_task(
         billing_type          = task.billing_type or "Billable",
     )
 
+    # Sync completion percentage with status
+    if db_task.status_id:
+        status_rec = db.execute(select(MasterLookup).where(MasterLookup.id == db_task.status_id)).scalar_one_or_none()
+        if status_rec and status_rec.label == "Completed":
+            db_task.completion_percentage = 100
+        elif status_rec and status_rec.label in ["Open", "In Progress", "In Review"] and db_task.completion_percentage == 100:
+             # Reset to 0 only if it was 100 and moved back (optional but requested to be real-time)
+             db_task.completion_percentage = 0
+
+
     if task.owner_emails:
         owners = (
             db.execute(select(User).where(User.email.in_(task.owner_emails)))
@@ -192,6 +212,15 @@ def update_task(
     changes = capture_audit_details(db_task, update_data)
     for key, value in update_data.items():
         setattr(db_task, key, value)
+
+    # Sync completion percentage with status if status changed
+    if "status_id" in update_data:
+        status_rec = db.execute(select(MasterLookup).where(MasterLookup.id == db_task.status_id)).scalar_one_or_none()
+        if status_rec and status_rec.label == "Completed":
+            db_task.completion_percentage = 100
+        elif status_rec and status_rec.label in ["Open", "In Progress", "In Review"] and db_task.completion_percentage == 100:
+            db_task.completion_percentage = 0
+
 
     if task_update.owner_emails is not None:
         owners = (
