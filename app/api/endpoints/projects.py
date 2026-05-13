@@ -6,7 +6,12 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from sqlalchemy import select, or_
+from app.models.task import Task
+from app.models.issue import Issue
+from app.models.user import User
 from app.core.database import get_sync_db
+
 from app.core.security import (
     allow_authenticated,
     allow_pm,
@@ -144,6 +149,7 @@ def read_projects(
     status_id: Optional[List[int]] = Query(None),
     priority_id: Optional[List[int]] = Query(None),
     manager_emails: Optional[List[str]] = Query(None),
+    member_email: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
     db: Session = Depends(get_sync_db),
     current_user=Depends(allow_proj_view),
@@ -155,6 +161,7 @@ def read_projects(
         status_ids=status_id,
         priority_ids=priority_id,
         manager_emails=manager_emails,
+        member_email=member_email,
         is_archived=is_archived,
         is_template=is_template,
         include_all=include_all,
@@ -176,11 +183,36 @@ def read_project(
 
     if not is_full_access(current_user):
         member_ids = {m.user_id for m in db_project.team_members}
-        if current_user.id not in member_ids:
+        is_owner = db_project.owner_id == current_user.id
+        
+        # Check if assigned to any task
+        is_task_assignee = db.execute(
+            select(Task.id).where(
+                Task.project_id == project_id,
+                or_(
+                    Task.assignee_id == current_user.id,
+                    Task.assignees.any(User.id == current_user.id)
+                )
+            )
+        ).first() is not None
+
+        # Check if assigned to any issue
+        is_issue_assignee = db.execute(
+            select(Issue.id).where(
+                Issue.project_id == project_id,
+                or_(
+                    Issue.assignee_id == current_user.id,
+                    Issue.assignees.any(User.id == current_user.id)
+                )
+            )
+        ).first() is not None
+
+        if current_user.id not in member_ids and not is_owner and not is_task_assignee and not is_issue_assignee:
             raise HTTPException(
                 status_code=403,
-                detail="You are not a member of this project.",
+                detail="You are not a member or assignee of this project.",
             )
+
     return db_project
 
 

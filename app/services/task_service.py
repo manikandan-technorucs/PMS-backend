@@ -51,6 +51,7 @@ def get_tasks(
     status: Optional[str] = None,
     priority: Optional[str] = None,
     milestone_id: Optional[int] = None,
+    search: Optional[str] = None,
 ) -> dict:
 
     stmt = _task_query()
@@ -65,8 +66,14 @@ def get_tasks(
     if priority_ids:
         stmt = stmt.where(Task.priority_id.in_(priority_ids))
 
+    if search:
+        q = f"%{search}%"
+        stmt = stmt.where(
+            or_(Task.task_name.ilike(q), Task.public_id.ilike(q))
+        )
 
     if assignee_emails:
+
         stmt = stmt.join(User, User.id == Task.assignee_id, isouter=True).where(
             or_(
                 User.email.in_(assignee_emails),
@@ -118,12 +125,19 @@ def create_task(
         if tl and tl.milestone_id:
             task.milestone_id = tl.milestone_id
 
+    # If no task_list_id is provided, assign to "General" task list for the project
+    final_task_list_id = task.task_list_id
+    if not final_task_list_id and task.project_id:
+        from app.services.task_list_service import get_or_create_general_list
+        general_list = get_or_create_general_list(db, task.project_id)
+        final_task_list_id = general_list.id
+
     db_task = Task(
         public_id             = public_id,
         task_name             = task.task_name,
         description           = task.description,
         project_id            = task.project_id,
-        task_list_id          = task.task_list_id,
+        task_list_id          = final_task_list_id,
         milestone_id          = task.milestone_id,
         associated_team_id    = task.associated_team_id,
         assignee_id           = task.assignee_id,

@@ -10,6 +10,8 @@ from app.models.issue import Issue
 from app.models.timelog import TimeLog
 from app.models.milestone import Milestone
 from app.models.master import MasterLookup
+from app.models.user import User
+
 import csv
 import io
 
@@ -52,17 +54,20 @@ def get_report_summary(
             task_query = task_query.filter(
                 or_(
                     Task.assignee_id == current_user.id,
-                    Task.assignees.any(id=current_user.id),
-                    Task.owners.any(id=current_user.id)
+                    Task.assignees.any(User.id == current_user.id),
+                    Task.owners.any(User.id == current_user.id),
+                    Task.created_by_id == current_user.id
                 )
             )
             task_comp_query = task_comp_query.filter(
                 or_(
                     Task.assignee_id == current_user.id,
-                    Task.assignees.any(id=current_user.id),
-                    Task.owners.any(id=current_user.id)
+                    Task.assignees.any(User.id == current_user.id),
+                    Task.owners.any(User.id == current_user.id),
+                    Task.created_by_id == current_user.id
                 )
             )
+
 
     task_total = task_query.scalar() or 0
     task_completed = task_comp_query.scalar() or 0
@@ -80,15 +85,18 @@ def get_report_summary(
             issue_query = issue_query.filter(
                 or_(
                     Issue.assignee_id == current_user.id,
-                    Issue.assignees.any(id=current_user.id)
+                    Issue.assignees.any(User.id == current_user.id),
+                    Issue.reporter_id == current_user.id
                 )
             )
             issue_open_query = issue_open_query.filter(
                 or_(
                     Issue.assignee_id == current_user.id,
-                    Issue.assignees.any(id=current_user.id)
+                    Issue.assignees.any(User.id == current_user.id),
+                    Issue.reporter_id == current_user.id
                 )
             )
+
 
     issue_total = issue_query.scalar() or 0
     issue_open = issue_open_query.scalar() or 0

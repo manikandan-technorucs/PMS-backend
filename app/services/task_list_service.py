@@ -38,9 +38,13 @@ def create_task_list(
     actor_id: Optional[str] = None,
 ) -> TaskList:
     from sqlalchemy import func
+    
+    # Trim and normalize name
+    clean_name = task_list.name.strip()
+    
     existing = db.execute(
         select(TaskList).where(
-            func.lower(TaskList.name) == func.lower(task_list.name),
+            func.lower(TaskList.name) == func.lower(clean_name),
             TaskList.project_id == task_list.project_id
         )
     ).scalar_one_or_none()
@@ -49,7 +53,7 @@ def create_task_list(
         return existing
 
     db_tl = TaskList(
-        name         = task_list.name,
+        name         = clean_name,
         description  = task_list.description,
         project_id   = task_list.project_id,
         milestone_id = task_list.milestone_id,
@@ -60,10 +64,18 @@ def create_task_list(
     write_audit(
         db, actor_id, "CREATE", "task_lists",
         task_list.project_id or db_tl.id, db_tl.id,
-        [{"field_name": "name", "old_value": None, "new_value": task_list.name}],
+        [{"field_name": "name", "old_value": None, "new_value": clean_name}],
     )
     db.commit()
     return get_task_list(db, db_tl.id)
+
+def get_or_create_general_list(db: Session, project_id: int) -> TaskList:
+    """Helper to ensure a project always has a General task list."""
+    from app.schemas.task_list import TaskListCreate
+    return create_task_list(
+        db, 
+        TaskListCreate(name="General", project_id=project_id, description="Default task list for general tasks")
+    )
 
 def update_task_list(
     db: Session,

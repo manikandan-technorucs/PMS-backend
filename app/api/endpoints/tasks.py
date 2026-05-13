@@ -16,7 +16,8 @@ from app.core.security import (
     is_employee_only,
     is_full_access,
 )
-from sqlalchemy import select
+from sqlalchemy import select, or_, exists
+
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskListResponse
 from app.services import task_service
 
@@ -72,9 +73,10 @@ def read_tasks(
     limit: int = 100,
     project_id: Optional[int] = None,
     assignee_email: Optional[List[str]] = Query(None),
-    status: Optional[str] = Query(None),
-    priority: Optional[str] = Query(None),
+    status_id: Optional[List[int]] = Query(None),
+    priority_id: Optional[List[int]] = Query(None),
     milestone_id: Optional[int] = Query(None),
+    search: Optional[str] = Query(None),
     db: Session = Depends(get_sync_db),
 
     current_user=Depends(allow_task_view),
@@ -104,12 +106,13 @@ def read_tasks(
         skip=skip,
         limit=limit,
         project_id=project_id,
-        status=status,
-        priority=priority,
+        status_ids=status_id,
+        priority_ids=priority_id,
         milestone_id=milestone_id,
         assignee_emails=assignee_email,
-
+        search=search,
     )
+
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -122,11 +125,41 @@ def read_task(
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if is_employee_only(current_user) and db_task.assignee_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied: you are not assigned to this task.",
+    if not is_full_access(current_user):
+        from app.models.task import task_assignees
+        
+        # Check if user has access: assignee or co-assignee
+        is_co_assignee = db.execute(
+            select(exists().where(
+                task_assignees.c.task_id == task_id,
+                task_assignees.c.user_id == current_user.id
+            ))
+        ).scalar()
+
+        
+        has_access = (
+            db_task.assignee_id == current_user.id or 
+            is_co_assignee or
+            db_task.created_by_id == current_user.id
         )
+        
+        if not has_access:
+            # Also check if they are a project member
+            from app.models.project import ProjectMember
+            is_member = db.execute(
+                select(ProjectMember).where(
+                    ProjectMember.project_id == db_task.project_id,
+                    ProjectMember.user_id == current_user.id
+                )
+            ).first() is not None
+            
+            if not is_member:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: you are not assigned to this task and not a project member.",
+                )
+    return db_task
+
     return db_task
 
 

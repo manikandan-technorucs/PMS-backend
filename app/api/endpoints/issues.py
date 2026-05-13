@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_issue_create, allow_issue_view, allow_issue_delete
+from sqlalchemy import select, or_, exists
+from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_issue_create, allow_issue_view, allow_issue_delete, check_issue_owner_or_lead
+
+from app.models.user import User
+
 from app.schemas.issue import IssueCreate, IssueUpdate, IssueResponse, IssueListResponse
 from app.services import issue_service
 
@@ -76,7 +80,10 @@ def read_issues(
     if not is_full_access(current_user):
         if project_id:
             from app.models.project import ProjectMember
-            from sqlalchemy import select
+            from app.models.issue import Issue
+
+            
+            # Member can see all project issues
             is_member = db.execute(
                 select(ProjectMember).where(
                     ProjectMember.project_id == project_id,
@@ -85,11 +92,15 @@ def read_issues(
             ).first() is not None
             
             if not is_member:
+                # Not a member, but maybe assigned to some issues in this project?
+                # We'll filter by assignee_email in the service
                 assignee_email = [current_user.email]
             else:
                 assignee_email = None
         else:
+            # No project_id, show only assigned issues globally
             assignee_email = [current_user.email]
+
 
     return issue_service.get_issues(
         db,
@@ -116,11 +127,41 @@ def read_issue(
     if db_issue is None:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    if is_employee_only(current_user) and db_issue.assignee_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied: you are not assigned to this issue.",
+    if not is_full_access(current_user):
+        from app.models.issue import issue_assignees
+        
+        # Check if user has access: reporter, assignee, or co-assignee
+
+        is_co_assignee = db.execute(
+            select(exists().where(
+                issue_assignees.c.issue_id == issue_id,
+                issue_assignees.c.user_id == current_user.id
+            ))
+        ).scalar()
+        
+        has_access = (
+            db_issue.reporter_id == current_user.id or 
+            db_issue.assignee_id == current_user.id or 
+            is_co_assignee
         )
+        
+        if not has_access:
+            # Also check if they are a project member
+            from app.models.project import ProjectMember
+            is_member = db.execute(
+                select(ProjectMember).where(
+                    ProjectMember.project_id == db_issue.project_id,
+                    ProjectMember.user_id == current_user.id
+                )
+            ).first() is not None
+            
+            if not is_member:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: you are not assigned to this issue and not a project member.",
+                )
+    return db_issue
+
     return db_issue
 
 
@@ -129,16 +170,12 @@ def update_issue(
     issue_id: int,
     issue: IssueUpdate,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_issue_view),
+    current_user=Depends(check_issue_owner_or_lead),
 ):
     db_issue = issue_service.get_issue(db, issue_id=issue_id)
     if db_issue is None:
         raise HTTPException(status_code=404, detail="Issue not found")
-    if is_employee_only(current_user) and db_issue.assignee_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied: you can only update issues assigned to you.",
-        )
+
     updated = issue_service.update_issue(
         db,
         issue_id=issue_id,

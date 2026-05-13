@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional, Union
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
@@ -16,7 +16,6 @@ from app.core.database import get_sync_db
 pwd_context    = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _bearer_scheme = HTTPBearer(auto_error=False)
 
-# Replaced hardcoded strings with settings
 ROLE_ADMIN           = settings.ROLE_ADMIN
 ROLE_TEAM_LEAD       = settings.ROLE_TEAM_LEAD
 ROLE_EMPLOYEE        = settings.ROLE_EMPLOYEE
@@ -56,16 +55,23 @@ def create_refresh_token(
 
 def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
+    token: Optional[str] = Query(None),
     db: Session = Depends(get_sync_db),
 ):
-    if not credentials:
+    token_str = None
+    if credentials:
+        token_str = credentials.credentials
+    elif token:
+        token_str = token
+
+    if not token_str:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
             headers={"WWW-Authenticate": "Bearer"},
         )
     try:
-        payload   = jwt.decode(credentials.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload   = jwt.decode(token_str, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id_s = payload.get("sub")
         if not user_id_s:
             raise ValueError("No sub in payload")
@@ -197,8 +203,9 @@ class CheckTaskOwner:
         if current_user.role and current_user.role.name == ROLE_ADMIN:
             return current_user
 
-        from app.models.task import Task
+        from app.models.task import Task, task_assignees
         from app.models.project import Project
+        from sqlalchemy import exists
         
         result = db.execute(
             select(Task.assignee_id, Project.owner_id)
@@ -214,6 +221,25 @@ class CheckTaskOwner:
         if owner_id is not None and owner_id == current_user.id:
             return current_user
         if assignee_id is not None and assignee_id == current_user.id:
+            return current_user
+
+        is_co_assignee = db.execute(
+            select(exists().where(
+                task_assignees.c.task_id == task_id,
+                task_assignees.c.user_id == current_user.id
+            ))
+        ).scalar()
+        if is_co_assignee:
+            return current_user
+
+        from app.models.project import ProjectMember
+        is_member = db.execute(
+            select(exists().where(
+                ProjectMember.project_id == (db.execute(select(Task.project_id).where(Task.id == task_id)).scalar()),
+                ProjectMember.user_id == current_user.id
+            ))
+        ).scalar()
+        if is_member:
             return current_user
 
         if self.required_permission and current_user.role and current_user.role.permissions:
@@ -232,9 +258,79 @@ class CheckTaskOwner:
             detail=msg,
         )
 
+class CheckIssueOwner:
+    def __init__(self, allowed_roles: List[str], required_permission: str = None):
+        self.allowed_roles = allowed_roles
+        self.required_permission = required_permission
+        
+    def __call__(
+        self,
+        issue_id: int,
+        current_user=Depends(get_current_user),
+        db: Session = Depends(get_sync_db),
+    ):
+        if current_user.role and current_user.role.name == ROLE_ADMIN:
+            return current_user
+
+        from app.models.issue import Issue, issue_assignees
+        from app.models.project import Project
+        from sqlalchemy import exists
+        
+        result = db.execute(
+            select(Issue.assignee_id, Issue.reporter_id, Project.owner_id)
+            .outerjoin(Project, Project.id == Issue.project_id)
+            .where(Issue.id == issue_id)
+        )
+        row = result.first()
+        if not row:
+            raise HTTPException(status_code=404, detail="Issue not found")
+            
+        assignee_id, reporter_id, owner_id = row
+        
+        if owner_id is not None and owner_id == current_user.id:
+            return current_user
+        if assignee_id is not None and assignee_id == current_user.id:
+            return current_user
+        if reporter_id is not None and reporter_id == current_user.id:
+            return current_user
+
+        is_co_assignee = db.execute(
+            select(exists().where(
+                issue_assignees.c.issue_id == issue_id,
+                issue_assignees.c.user_id == current_user.id
+            ))
+        ).scalar()
+        if is_co_assignee:
+            return current_user
+
+        from app.models.project import ProjectMember
+        is_member = db.execute(
+            select(exists().where(
+                ProjectMember.project_id == (db.execute(select(Issue.project_id).where(Issue.id == issue_id)).scalar()),
+                ProjectMember.user_id == current_user.id
+            ))
+        ).scalar()
+        if is_member:
+            return current_user
+
+        if self.required_permission and current_user.role and current_user.role.permissions:
+            if current_user.role.permissions.get(self.required_permission) is True:
+                return current_user
+
+        if current_user.role and current_user.role.name in self.allowed_roles:
+            return current_user
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Requires assignee, reporter, project ownership or elevated permissions.",
+        )
+
+
 check_project_owner_or_pm       = CheckProjectOwner(FULL_ACCESS_ROLES, "proj-edit")
 check_project_owner_or_lead     = CheckProjectOwner(TEAM_LEAD_PLUS_ROLES, "proj-edit")
 check_task_owner_or_lead        = CheckTaskOwner(TEAM_LEAD_PLUS_ROLES, "task-edit")
+check_issue_owner_or_lead       = CheckIssueOwner(TEAM_LEAD_PLUS_ROLES, "issue-edit")
+
 
 class ProjectRoleChecker:
     def __init__(self, allowed_roles: List[str]):
