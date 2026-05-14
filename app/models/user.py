@@ -36,7 +36,7 @@ class User(AuditMixin, Base):
     public_id = Column(String(50), unique=True, index=True, nullable=False)
     employee_id = Column(String(50), unique=True, index=True, nullable=False)
     first_name = Column(String(100), nullable=False)
-    last_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)

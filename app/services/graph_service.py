@@ -35,7 +35,7 @@ def get_graph_token() -> str:
         f"Failed to acquire Graph token: {result.get('error_description', 'Unknown error')}"
     )
 
-def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> None:
+def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> Optional[int]:
 
     from app.models.user import User
     from app.utils.ids import generate_public_id
@@ -45,46 +45,51 @@ def _jit_upsert_user(db: Session, graph_user: Dict[str, Any]) -> None:
     display_name = graph_user.get("displayName", "")
 
     if not oid or not mail:
-        return
+        return None
 
     try:
-        with db.begin_nested():
-            existing = db.query(User).filter(User.o365_id == oid).first()
-            if existing:
-                stale = (
-                    existing.display_name != display_name
-                    or existing.email != mail
-                )
-                if stale:
-                    existing.display_name = display_name
-                    existing.email        = mail
-                return
+        existing = db.query(User).filter(User.o365_id == oid).first()
+        if existing:
+            stale = (
+                existing.display_name != display_name
+                or existing.email != mail
+            )
+            if stale:
+                existing.display_name = display_name
+                existing.email        = mail
+                db.flush()
+            return existing.id
 
-            existing_by_email = db.query(User).filter(User.email == mail).first()
-            if existing_by_email:
-                existing_by_email.o365_id     = oid
-                existing_by_email.display_name = display_name
-                existing_by_email.is_synced   = True
-                return
+        existing_by_email = db.query(User).filter(User.email == mail).first()
+        if existing_by_email:
+            existing_by_email.o365_id     = oid
+            existing_by_email.display_name = display_name
+            existing_by_email.is_synced   = True
+            db.flush()
+            return existing_by_email.id
 
-            name_parts = display_name.split(" ", 1)
-            first_name = name_parts[0]
-            last_name  = name_parts[1] if len(name_parts) > 1 else "User"
+        name_parts = display_name.split(" ", 1)
+        first_name = name_parts[0]
+        last_name  = name_parts[1] if len(name_parts) > 1 else None
 
-            db.add(User(
-                public_id    = generate_public_id("USR-"),
-                employee_id  = generate_public_id("EMP-"),
-                o365_id      = oid,
-                email        = mail,
-                username     = mail.split("@")[0],
-                first_name   = first_name,
-                last_name    = last_name,
-                display_name = display_name,
-                is_synced    = True,
-            ))
+        new_user = User(
+            public_id    = generate_public_id("USR-"),
+            employee_id  = generate_public_id("EMP-"),
+            o365_id      = oid,
+            email        = mail,
+            username     = mail.split("@")[0],
+            first_name   = first_name,
+            last_name    = last_name,
+            display_name = display_name,
+            is_synced    = True,
+        )
+        db.add(new_user)
+        db.flush()
+        return new_user.id
 
     except Exception as exc:
         print(f"[JIT UPSERT WARNING] Could not provision user {mail}: {exc}")
+        return None
 
 def search_azure_users(
     query: str,
@@ -123,15 +128,25 @@ def search_azure_users(
             f"Graph API Error {response.status_code}: {response.text}"
         )
 
-    users: List[Dict[str, Any]] = response.json().get("value", [])
+    azure_users: List[Dict[str, Any]] = response.json().get("value", [])
+    results = []
 
-    if db is not None and users:
+    if db is not None and azure_users:
         try:
-            for graph_user in users:
-                _jit_upsert_user(db, graph_user)
+            for gu in azure_users:
+                local_id = _jit_upsert_user(db, gu)
+                if local_id:
+                    results.append({
+                        "id": local_id,
+                        "o365_id": gu.get("id"),
+                        "displayName": gu.get("displayName"),
+                        "mail": gu.get("mail")
+                    })
             db.commit()
         except Exception as exc:
             db.rollback()
             print(f"[JIT SYNC WARNING] Batch commit failed, rolled back: {exc}")
+            # Fallback to returning raw azure users if sync fails completely
+            return azure_users
 
-    return users
+    return results if results else azure_users
