@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_sync_db
-from app.core.security import get_current_user, allow_authenticated, allow_pm, is_employee_only, allow_role_manage
+from app.core.security import get_current_user, allow_authenticated, is_employee_only, allow_user_view, allow_user_create, allow_user_edit, allow_user_delete
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, UserListResponse
 from app.services import user_service
@@ -22,6 +22,7 @@ def search_users(
     q: str = Query(..., min_length=1),
     limit: int = 20,
     db: Session = Depends(get_sync_db),
+    current_user=Depends(allow_user_view)
 ):
     return user_service.search_users(db, query=q, limit=limit)
 
@@ -29,7 +30,7 @@ def search_users(
 def create_user(
     user: UserCreate,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_role_manage),
+    current_user=Depends(allow_user_create),
 ):
     if user_service.get_user_by_email(db, email=user.email):
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -44,6 +45,7 @@ def read_users(
     search: Optional[str] = None,
     role_id: Optional[List[int]] = Query(None),
     db: Session = Depends(get_sync_db),
+    current_user=Depends(allow_user_view)
 ):
     return user_service.get_users(db, skip=skip, limit=limit, search=search, role_ids=role_id)
 
@@ -51,6 +53,7 @@ def read_users(
 def read_user(
     user_id: int,
     db: Session = Depends(get_sync_db),
+    current_user=Depends(allow_user_view)
 ):
     db_user = user_service.get_user(db, user_id=user_id)
     if db_user is None:
@@ -62,7 +65,7 @@ def update_user(
     user_id: int,
     user_update: UserUpdate,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_authenticated),
+    current_user=Depends(allow_user_edit),
 ):
     if is_employee_only(current_user) and current_user.id != user_id:
         raise HTTPException(status_code=403, detail="Access denied: you can only update your own profile.")
@@ -77,7 +80,7 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_role_manage),
+    current_user=Depends(allow_user_delete),
 ):
     success = user_service.delete_user(db, user_id=user_id, actor_id=current_user.o365_id or str(current_user.id))
     if not success:

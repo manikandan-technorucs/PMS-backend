@@ -17,7 +17,6 @@ from app.core.security import (
     allow_pm,
     allow_proj_create,
     allow_proj_view,
-    allow_role_manage,
     check_project_owner_or_pm,
     check_project_owner_or_lead,
     is_employee_only,

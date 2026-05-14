@@ -167,6 +167,7 @@ allow_team_delete    = RoleChecker(FULL_ACCESS_ROLES, "team-delete")
 
 allow_report_view    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "report-view")
 allow_settings_view  = RoleChecker(TEAM_LEAD_PLUS_ROLES, "settings-view")
+allow_role_manage    = RoleChecker(FULL_ACCESS_ROLES, "settings-edit")
 
 def allow_authenticated(current_user=Depends(get_current_user)):
     return current_user
