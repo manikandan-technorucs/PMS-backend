@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated, allow_team_lead_plus, allow_milestone_create, allow_milestone_view, allow_milestone_edit
+from app.core.security import allow_authenticated, allow_milestone_create, allow_milestone_view, allow_milestone_edit, allow_milestone_delete
 from app.core.dependencies import auto_populate_milestone
 from app.schemas.milestone import MilestoneCreate, MilestoneResponse, MilestoneUpdate
 from app.services import milestone_service
@@ -89,7 +89,7 @@ def update_milestone(
 def delete_milestone(
     milestone_id: int,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_team_lead_plus),
+    current_user=Depends(allow_milestone_delete),
 ):
     success = milestone_service.delete_milestone(
         db,

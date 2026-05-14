@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, or_
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated
+from app.core.security import allow_authenticated, is_full_access, is_team_lead_plus
 from app.models.project import Project
 from app.models.task import Task
 from app.models.issue import Issue
@@ -22,9 +22,8 @@ def get_report_summary(
     db: Session = Depends(get_sync_db),
     current_user = Depends(allow_authenticated)
 ):
-    from app.core.security import ROLE_ADMIN, ROLE_TEAM_LEAD
-    is_admin = current_user.role and current_user.role.name == ROLE_ADMIN
-    is_team_lead = current_user.role and current_user.role.name == ROLE_TEAM_LEAD
+    is_admin = is_full_access(current_user)
+    is_team_lead = is_team_lead_plus(current_user)
 
     proj_query = db.query(
         func.count(Project.id).label("total"),

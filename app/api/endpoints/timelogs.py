@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 
 from app.core.database import get_sync_db
-from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_time_create, allow_time_view
+from app.core.security import allow_authenticated, allow_time_delete, is_employee_only, is_full_access, allow_time_create, allow_time_view
 from app.core.dependencies import auto_populate_timelog
 from app.schemas.timelog import TimeLogCreate, TimeLogUpdate, TimeLogResponse, TimeLogBulkCreate
 from app.services import timelog_service
@@ -114,11 +114,11 @@ def update_timelog(
     return updated
 
 
-@router.delete("/{timelog_id}", status_code=204, dependencies=[Depends(allow_team_lead_plus)])
+@router.delete("/{timelog_id}", status_code=204, dependencies=[Depends(allow_time_delete)])
 def delete_timelog(
     timelog_id: int,
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_team_lead_plus),
+    current_user=Depends(allow_time_delete),
 ):
     success = timelog_service.delete_timelog(
         db,

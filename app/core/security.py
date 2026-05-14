@@ -96,10 +96,14 @@ def get_user_role_name(user) -> Optional[str]:
     return user.role.name if user and user.role else None
 
 def is_full_access(user) -> bool:
-    return get_user_role_name(user) in FULL_ACCESS_ROLES
+    if not user or not user.role: return False
+    if user.role.name == ROLE_ADMIN: return True
+    return user.role.permissions.get('settings-edit') is True
 
 def is_team_lead_plus(user) -> bool:
-    return get_user_role_name(user) in TEAM_LEAD_PLUS_ROLES
+    if not user or not user.role: return False
+    if user.role.name in [ROLE_ADMIN, ROLE_TEAM_LEAD]: return True
+    return user.role.permissions.get('report-view') is True or user.role.permissions.get('settings-edit') is True
 
 def is_employee_only(user) -> bool:
     return get_user_role_name(user) == ROLE_EMPLOYEE
@@ -141,12 +145,28 @@ allow_issue_view     = RoleChecker(ALL_ROLES, "issue-view")
 allow_issue_delete   = RoleChecker(TEAM_LEAD_PLUS_ROLES, "issue-delete")
 allow_task_delete    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "task-delete")
 allow_proj_delete    = RoleChecker(FULL_ACCESS_ROLES, "proj-delete")
-allow_time_create    = RoleChecker(ALL_ROLES, "time-create")
-allow_time_view      = RoleChecker(ALL_ROLES, "time-view")
-allow_role_manage    = RoleChecker(FULL_ACCESS_ROLES, "role-manage")
 allow_milestone_create = RoleChecker(TEAM_LEAD_PLUS_ROLES, "milestone-create")
 allow_milestone_view   = RoleChecker(ALL_ROLES, "milestone-view")
 allow_milestone_edit   = RoleChecker(TEAM_LEAD_PLUS_ROLES, "milestone-edit")
+allow_milestone_delete = RoleChecker(FULL_ACCESS_ROLES, "milestone-delete")
+
+allow_time_create    = RoleChecker(ALL_ROLES, "time-create")
+allow_time_view      = RoleChecker(ALL_ROLES, "time-view")
+allow_time_edit      = RoleChecker(ALL_ROLES, "time-edit")
+allow_time_delete    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "time-delete")
+
+allow_user_view      = RoleChecker(ALL_ROLES, "user-view")
+allow_user_create    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "user-create")
+allow_user_edit      = RoleChecker(TEAM_LEAD_PLUS_ROLES, "user-edit")
+allow_user_delete    = RoleChecker(FULL_ACCESS_ROLES, "user-delete")
+
+allow_team_view      = RoleChecker(ALL_ROLES, "team-view")
+allow_team_create    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "team-create")
+allow_team_edit      = RoleChecker(TEAM_LEAD_PLUS_ROLES, "team-edit")
+allow_team_delete    = RoleChecker(FULL_ACCESS_ROLES, "team-delete")
+
+allow_report_view    = RoleChecker(TEAM_LEAD_PLUS_ROLES, "report-view")
+allow_settings_view  = RoleChecker(TEAM_LEAD_PLUS_ROLES, "settings-view")
 
 def allow_authenticated(current_user=Depends(get_current_user)):
     return current_user

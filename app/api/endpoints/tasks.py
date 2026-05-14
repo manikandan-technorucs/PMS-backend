@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.core.database import get_sync_db
 from app.core.security import (
     allow_authenticated,
-    allow_team_lead_plus,
     allow_task_create,
     allow_task_view,
     allow_task_delete,
@@ -42,7 +41,7 @@ def create_task(
 def bulk_create_tasks(
     tasks: List[TaskCreate],
     db: Session = Depends(get_sync_db),
-    current_user=Depends(allow_team_lead_plus),
+    current_user=Depends(allow_task_create),
 ):
     results = []
     for t in tasks:

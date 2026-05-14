@@ -4,7 +4,7 @@ from typing import List, Optional
 
 from app.core.database import get_sync_db
 from sqlalchemy import select, or_, exists
-from app.core.security import allow_authenticated, allow_team_lead_plus, is_employee_only, is_full_access, allow_issue_create, allow_issue_view, allow_issue_delete, check_issue_owner_or_lead
+from app.core.security import allow_authenticated, is_employee_only, is_full_access, allow_issue_create, allow_issue_view, allow_issue_delete, check_issue_owner_or_lead
 
 from app.models.user import User
 
@@ -31,7 +31,7 @@ def create_issue(
     )
 
 
-@router.post("/bulk", response_model=List[IssueResponse], dependencies=[Depends(allow_team_lead_plus)])
+@router.post("/bulk", response_model=List[IssueResponse], dependencies=[Depends(allow_issue_create)])
 def bulk_create_issues(
     issues: List[IssueCreate],
     db: Session = Depends(get_sync_db),

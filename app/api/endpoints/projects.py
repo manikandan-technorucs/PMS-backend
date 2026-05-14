@@ -15,7 +15,6 @@ from app.core.database import get_sync_db
 from app.core.security import (
     allow_authenticated,
     allow_pm,
-    allow_team_lead_plus,
     allow_proj_create,
     allow_proj_view,
     allow_role_manage,
