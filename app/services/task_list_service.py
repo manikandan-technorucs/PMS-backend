@@ -38,6 +38,7 @@ def create_task_list(
     actor_id: Optional[str] = None,
 ) -> TaskList:
     from sqlalchemy import func
+    from fastapi import HTTPException
     
     clean_name = task_list.name.strip()
     
@@ -50,7 +51,7 @@ def create_task_list(
     existing = db.execute(stmt).scalars().first()
     
     if existing:
-        return existing
+        raise HTTPException(status_code=400, detail=f"A task list named '{clean_name}' already exists in this project.")
 
     db_tl = TaskList(
         name         = clean_name,
@@ -70,8 +71,14 @@ def create_task_list(
     return get_task_list(db, db_tl.id)
 
 def get_or_create_general_list(db: Session, project_id: int) -> TaskList:
-    """Helper to ensure a project always has a General task list."""
     from app.schemas.task_list import TaskListCreate
+    from sqlalchemy import select
+    
+    stmt = select(TaskList).where(TaskList.name.ilike("General"), TaskList.project_id == project_id)
+    existing = db.execute(stmt).scalars().first()
+    if existing:
+        return existing
+
     return create_task_list(
         db, 
         TaskListCreate(name="General", project_id=project_id, description="Default task list for general tasks")
@@ -89,6 +96,20 @@ def update_task_list(
         return None
 
     update_data = task_list_update.model_dump(exclude_unset=True)
+    
+    if "name" in update_data:
+        new_name = update_data["name"].strip()
+        stmt = select(TaskList).where(
+            TaskList.name.ilike(new_name),
+            TaskList.project_id == db_tl.project_id,
+            TaskList.id != task_list_id
+        )
+        conflict = db.execute(stmt).scalars().first()
+        if conflict:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail=f"A task list named '{new_name}' already exists in this project.")
+        update_data["name"] = new_name
+
     changes = capture_audit_details(db_tl, update_data)
     
     milestone_changed = "milestone_id" in update_data and update_data["milestone_id"] != db_tl.milestone_id

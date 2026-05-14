@@ -48,11 +48,15 @@ def get_issues(
     severity_ids: Optional[List[int]] = None,
     assignee_emails: Optional[List[str]] = None,
     search: Optional[str] = None,
+    milestone_id: Optional[int] = None,
 ) -> dict:
     stmt = _issue_query()
 
     if project_id is not None:
         stmt = stmt.where(Issue.project_id == project_id)
+
+    if milestone_id is not None:
+        stmt = stmt.where(Issue.milestone_id == milestone_id)
 
     if status_ids:
         stmt = stmt.where(Issue.status_id.in_(status_ids))
@@ -83,30 +87,45 @@ def get_issues(
     total = (db.execute(count_stmt)).scalar() or 0
     items_result = db.execute(stmt.offset(skip).limit(limit))
     items = items_result.scalars().unique().all()
-    base_filtered_stmt = stmt.subquery()
-    
-    stats_query = select(
-        MasterLookup.category,
-        func.count(Issue.id)
-    ).join(
-        Issue, Issue.status_id == MasterLookup.id
-    ).where(
-        Issue.id.in_(select(base_filtered_stmt.c.id))
-    ).group_by(MasterLookup.category)
-    
-    stats_res = db.execute(stats_query).all()
-    stats_map = {str(cat).lower() if cat else 'open': count for cat, count in stats_res}
-    
-    final_stats = {
-        "open": stats_map.get('open', 0),
-        "in_progress": stats_map.get('in_progress', 0) + stats_map.get('in_review', 0) + stats_map.get('to_be_tested', 0),
-        "closed": stats_map.get('closed', 0) + stats_map.get('cancelled', 0) + stats_map.get('done', 0)
-    }
+
+    # Compute status stats — group by the label (e.g. "Open", "In Progress")
+    # Use a safe try/except so broken/orphaned records never crash the list endpoint.
+    final_stats = {"open": 0, "in_progress": 0, "closed": 0}
+    try:
+        base_filtered_stmt = stmt.subquery()
+        stats_query = (
+            select(MasterLookup.label, func.count(Issue.id))
+            .join(MasterLookup, Issue.status_id == MasterLookup.id)
+            .where(
+                Issue.id.in_(select(base_filtered_stmt.c.id)),
+                Issue.status_id.isnot(None),
+            )
+            .group_by(MasterLookup.label)
+        )
+        stats_res = db.execute(stats_query).all()
+        stats_map = {str(lbl).lower().replace(" ", "_"): cnt for lbl, cnt in stats_res}
+        final_stats = {
+            "open": stats_map.get("open", 0),
+            "in_progress": (
+                stats_map.get("in_progress", 0)
+                + stats_map.get("in_review", 0)
+                + stats_map.get("to_be_tested", 0)
+                + stats_map.get("reopened", 0)
+            ),
+            "closed": (
+                stats_map.get("closed", 0)
+                + stats_map.get("cancelled", 0)
+                + stats_map.get("done", 0)
+                + stats_map.get("fixed", 0)
+            ),
+        }
+    except Exception:
+        pass  # Stats are best-effort; don't crash the issues list
 
     return {
-        "total": total, 
+        "total": total,
         "items": items,
-        "stats": final_stats
+        "stats": final_stats,
     }
 
 
