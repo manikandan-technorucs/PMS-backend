@@ -22,11 +22,13 @@ def get_report_summary(
     db: Session = Depends(get_sync_db),
     current_user = Depends(allow_authenticated)
 ):
+    from app.models.project import ProjectMember
     is_admin = is_full_access(current_user)
     is_team_lead = is_team_lead_plus(current_user)
 
+    # 1. Projects
     proj_query = db.query(
-        func.count(Project.id).label("total"),
+        func.count(Project.id.distinct()).label("total"),
         func.sum(
             case(
                 (MasterLookup.label.notin_(["Completed", "Closed"]), 1),
@@ -36,19 +38,36 @@ def get_report_summary(
     ).outerjoin(MasterLookup, Project.status_id == MasterLookup.id)
 
     if not is_admin:
-        from app.models.project import ProjectMember
-        proj_query = proj_query.join(ProjectMember, ProjectMember.project_id == Project.id).filter(ProjectMember.user_id == current_user.id)
+        proj_query = proj_query.outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+            or_(
+                ProjectMember.user_id == current_user.id,
+                Project.project_manager_id == current_user.id,
+                Project.owner_id == current_user.id
+            )
+        )
 
-    proj_row = proj_query.one()
-
-    task_query = db.query(func.count(Task.id))
-    task_comp_query = db.query(func.count(Task.id)).join(Task.status_master).filter(MasterLookup.label == "Completed")
+    proj_row = proj_query.first()
+    
+    # 2. Tasks
+    task_query = db.query(func.count(Task.id.distinct()))
+    task_comp_query = db.query(func.count(Task.id.distinct())).join(MasterLookup, Task.status_id == MasterLookup.id).filter(MasterLookup.label == "Completed")
 
     if not is_admin:
         if is_team_lead:
-            from app.models.project import ProjectMember
-            task_query = task_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
-            task_comp_query = task_comp_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+            task_query = task_query.join(Project, Task.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.project_manager_id == current_user.id,
+                    Project.owner_id == current_user.id
+                )
+            )
+            task_comp_query = task_comp_query.join(Project, Task.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.project_manager_id == current_user.id,
+                    Project.owner_id == current_user.id
+                )
+            )
         else:
             task_query = task_query.filter(
                 or_(
@@ -67,19 +86,29 @@ def get_report_summary(
                 )
             )
 
-
     task_total = task_query.scalar() or 0
     task_completed = task_comp_query.scalar() or 0
 
-    issue_query = db.query(func.count(Issue.id))
-    issue_open_query = db.query(func.count(Issue.id)).join(Issue.status_master).filter(MasterLookup.label.notin_(["Completed", "Closed", "Resolved"]))
+    # 3. Issues
+    issue_query = db.query(func.count(Issue.id.distinct()))
+    issue_open_query = db.query(func.count(Issue.id.distinct())).join(MasterLookup, Issue.status_id == MasterLookup.id).filter(MasterLookup.label.notin_(["Completed", "Closed", "Resolved"]))
 
     if not is_admin:
         if is_team_lead:
-
-            from app.models.project import ProjectMember
-            issue_query = issue_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
-            issue_open_query = issue_open_query.join(Project).join(ProjectMember).filter(ProjectMember.user_id == current_user.id)
+            issue_query = issue_query.join(Project, Issue.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.project_manager_id == current_user.id,
+                    Project.owner_id == current_user.id
+                )
+            )
+            issue_open_query = issue_open_query.join(Project, Issue.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.project_manager_id == current_user.id,
+                    Project.owner_id == current_user.id
+                )
+            )
         else:
             issue_query = issue_query.filter(
                 or_(
@@ -96,25 +125,39 @@ def get_report_summary(
                 )
             )
 
-
     issue_total = issue_query.scalar() or 0
     issue_open = issue_open_query.scalar() or 0
 
+    # 4. Hours
     hours_query = db.query(func.sum(TimeLog.daily_log_hours))
     if not is_admin:
-        hours_query = hours_query.filter(TimeLog.user_id == current_user.id)
-    
+        if is_team_lead:
+            hours_query = hours_query.join(Project, TimeLog.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.project_manager_id == current_user.id,
+                    Project.owner_id == current_user.id
+                )
+            )
+        else:
+            hours_query = hours_query.filter(TimeLog.user_id == current_user.id)
     total_hours_logged = hours_query.scalar() or 0.0
 
-    milestone_query = db.query(func.count(Milestone.id))
+    # 5. Milestones
+    milestone_query = db.query(func.count(Milestone.id.distinct()))
     if not is_admin:
-        milestone_query = milestone_query.join(Project).join(Project.team_members).filter(ProjectMember.user_id == current_user.id)
-    
+        milestone_query = milestone_query.join(Project, Milestone.project_id == Project.id).outerjoin(ProjectMember, ProjectMember.project_id == Project.id).filter(
+            or_(
+                ProjectMember.user_id == current_user.id,
+                Project.project_manager_id == current_user.id,
+                Project.owner_id == current_user.id
+            )
+        )
     total_milestones = milestone_query.scalar() or 0
 
     return {
-        "total_projects":    proj_row.total  or 0,
-        "active_projects":   proj_row.active or 0,
+        "total_projects":    (proj_row.total if proj_row else 0) or 0,
+        "active_projects":   (proj_row.active if proj_row else 0) or 0,
         "total_tasks":       task_total,
         "completed_tasks":   task_completed,
         "total_issues":      issue_total,
