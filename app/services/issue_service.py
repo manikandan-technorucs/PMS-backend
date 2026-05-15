@@ -19,6 +19,7 @@ def _issue_query():
     from app.models.master import MasterLookup
     return (
         select(Issue)
+        .where(Issue.is_deleted == False)
         .options(
             selectinload(Issue.project),
             selectinload(Issue.reporter),

@@ -7,15 +7,14 @@ class MSCallbackRequest(BaseModel):
     redirect_uri: str
 
 class TokenResponse(BaseModel):
-
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     user_id: int
     public_id: str
     email: str
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = ""
+    last_name: Optional[str] = ""
     display_name: Optional[str] = None
     role: Optional[Dict[str, Any]] = None
     is_external: bool = False

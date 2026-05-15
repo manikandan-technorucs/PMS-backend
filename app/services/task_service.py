@@ -18,6 +18,7 @@ from app.models.master import MasterLookup
 def _task_query():
     return (
         select(Task)
+        .where(Task.is_deleted == False)
         .options(
             selectinload(Task.project),
             selectinload(Task.task_list),

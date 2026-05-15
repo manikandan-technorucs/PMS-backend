@@ -202,9 +202,9 @@ def upsert_o365_user(
             if default_status:
                 user.status_id = default_status.id
 
-        if first_name: user.first_name = first_name
-        if last_name: user.last_name = last_name
-        if display_name: user.display_name = display_name
+        if first_name is not None: user.first_name = first_name
+        if last_name is not None: user.last_name = last_name
+        if display_name is not None: user.display_name = display_name
         
         db.commit()
         db.refresh(user)

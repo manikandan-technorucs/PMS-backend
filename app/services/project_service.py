@@ -422,6 +422,12 @@ def delete_project(
     project_id: int,
     actor_id: Optional[str] = None,
 ) -> bool:
+    from sqlalchemy import update
+    from app.models.task import Task
+    from app.models.issue import Issue
+    from app.models.milestone import Milestone
+    from app.models.task_list import TaskList
+
     result = db.execute(select(Project).where(Project.id == project_id))
     db_project = result.scalar_one_or_none()
     if not db_project:
@@ -431,8 +437,17 @@ def delete_project(
         db, actor_id, "DELETE", "projects", project_id, project_id,
         [{"field_name": "project_name", "old_value": db_project.project_name, "new_value": None}],
     )
+    
+    # Soft delete the project
     db_project.is_deleted = True
     db_project.is_active  = False
+
+    # Cascade soft delete to all related entities
+    db.execute(update(Task).where(Task.project_id == project_id).values(is_deleted=True, is_active=False))
+    db.execute(update(Issue).where(Issue.project_id == project_id).values(is_deleted=True, is_active=False))
+    db.execute(update(Milestone).where(Milestone.project_id == project_id).values(is_deleted=True, is_active=False))
+    db.execute(update(TaskList).where(TaskList.project_id == project_id).values(is_deleted=True, is_active=False))
+
     db.commit()
     return True
 

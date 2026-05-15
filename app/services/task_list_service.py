@@ -11,7 +11,7 @@ from app.schemas.task_list import TaskListCreate, TaskListUpdate
 from app.utils.audit_utils import capture_audit_details, write_audit
 
 def _tl_query():
-    return select(TaskList).options(
+    return select(TaskList).where(TaskList.is_deleted == False).options(
         selectinload(TaskList.project),
         selectinload(TaskList.milestone),
     )

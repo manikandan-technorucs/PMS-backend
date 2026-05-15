@@ -17,6 +17,7 @@ from sqlalchemy import func
 def _milestone_query():
     return (
         select(Milestone)
+        .where(Milestone.is_deleted == False)
         .options(
             selectinload(Milestone.project),
             selectinload(Milestone.owner),

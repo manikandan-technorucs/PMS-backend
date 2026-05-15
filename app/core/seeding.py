@@ -82,11 +82,31 @@ def seed_master_lookups(db: Session):
 
 def seed_roles(db: Session):
     canonical_roles = ["Admin", "Team Lead", "Project Manager", "Employee"]
+    
+    # Full permissions for Admin
+    admin_perms = {
+        'proj-view': True, 'proj-create': True, 'proj-edit': True, 'proj-delete': True,
+        'task-view': True, 'task-create': True, 'task-edit': True, 'task-delete': True, 'task-assign': True,
+        'issue-view': True, 'issue-create': True, 'issue-edit': True, 'issue-delete': True,
+        'milestone-view': True, 'milestone-create': True, 'milestone-edit': True, 'milestone-delete': True,
+        'time-view': True, 'time-create': True, 'time-edit': True, 'time-delete': True, 'timesheet-approve': True,
+        'user-view': True, 'user-create': True, 'user-edit': True, 'user-delete': True,
+        'team-view': True, 'team-create': True, 'team-edit': True, 'team-delete': True,
+        'report-view': True, 'report-export': True,
+        'settings-view': True, 'settings-edit': True, 'role-manage': True, 'automation-manage': True
+    }
+
     for r_name in canonical_roles:
         role = db.query(Role).filter(Role.name == r_name).first()
         if not role:
-            db.add(Role(name=r_name, description=f"{r_name} role"))
+            perms = admin_perms if r_name == "Admin" else {}
+            db.add(Role(name=r_name, description=f"{r_name} role", permissions=perms))
             logger.info(f"Added Role: {r_name}")
+        elif r_name == "Admin" and (not role.permissions or role.permissions == {}):
+            role.permissions = admin_perms
+            db.add(role)
+            logger.info("Updated existing Admin role with default permissions")
+            
     db.commit()
 
 
