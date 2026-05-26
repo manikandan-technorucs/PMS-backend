@@ -60,6 +60,9 @@ def read_timelogs(
     current_user=Depends(allow_time_view),
     db: Session = Depends(get_sync_db),
 ):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'time-view')
+    
     return timelog_service.get_timelogs(
         db,
         skip=skip,
@@ -68,7 +71,7 @@ def read_timelogs(
         task_id=task_id,
         issue_id=issue_id,
         user_ids=user_id,
-        current_user=current_user if not is_full_access(current_user) else None,
+        current_user=current_user if view_level not in ('All', None) else None,
     )
 
 

@@ -152,6 +152,10 @@ def read_projects(
     db: Session = Depends(get_sync_db),
     current_user=Depends(allow_proj_view),
 ):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'proj-view')
+    
+    # 'All' or admin => no filtering, 'O' => own projects only, 'A' => assigned projects
     return project_service.get_projects(
         db,
         skip=skip,
@@ -164,7 +168,8 @@ def read_projects(
         is_template=is_template,
         include_all=include_all,
         search=search,
-        current_user=current_user if not is_full_access(current_user) else None,
+        current_user=current_user if view_level not in ('All', None) else None,
+        view_level=view_level,
     )
 
 

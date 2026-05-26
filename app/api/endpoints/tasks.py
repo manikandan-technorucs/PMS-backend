@@ -81,7 +81,14 @@ def read_tasks(
     current_user=Depends(allow_task_view),
 ):
 
-    if not is_full_access(current_user):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'task-view')
+
+    if view_level == 'O':
+        # Own: only tasks created by the user or where user is the owner
+        assignee_email = [current_user.email]
+    elif view_level == 'A':
+        # Assigned: tasks assigned to user OR tasks in projects where user is a member
         if project_id:
             from app.models.project import ProjectMember
             is_member = db.execute(
@@ -94,11 +101,10 @@ def read_tasks(
             if not is_member:
                 assignee_email = [current_user.email]
             else:
-                # Member of project, see all project tasks
                 assignee_email = None
         else:
-            # Global list, see only assigned
             assignee_email = [current_user.email]
+    # 'All' => no filtering, use whatever was passed
 
     return task_service.get_tasks(
         db,
@@ -124,7 +130,10 @@ def read_task(
     if db_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if not is_full_access(current_user):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'task-view')
+
+    if view_level != 'All':
         from app.models.task import task_assignees
         
         # Check if user has access: assignee or co-assignee
@@ -135,14 +144,13 @@ def read_task(
             ))
         ).scalar()
 
-        
         has_access = (
             db_task.assignee_id == current_user.id or 
             is_co_assignee or
             db_task.created_by_id == current_user.id
         )
         
-        if not has_access:
+        if not has_access and view_level == 'A':
             # Also check if they are a project member
             from app.models.project import ProjectMember
             is_member = db.execute(
@@ -152,13 +160,14 @@ def read_task(
                 )
             ).first() is not None
             
-            if not is_member:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Access denied: you are not assigned to this task and not a project member.",
-                )
-    return db_task
-
+            if is_member:
+                has_access = True
+                
+        if not has_access:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: you are not assigned to this task and not a project member.",
+            )
     return db_task
 
 

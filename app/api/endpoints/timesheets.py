@@ -26,7 +26,10 @@ def read_timesheets(
     current_user = Depends(allow_authenticated)
 ):
 
-    if is_employee_only(current_user):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'time-view')
+    
+    if view_level in ('O', 'A'):
         user_email = current_user.email
     return timesheet_service.get_timesheets(db, skip=skip, limit=limit, project_id=project_id, user_email=user_email)
 

@@ -92,18 +92,42 @@ def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return user
 
-def get_user_role_name(user) -> Optional[str]:
-    return user.role.name if user and user.role else None
+def _has_permission(user, perm_key: str) -> bool:
+    """Check if a user has a given permission (boolean True or string 'O'/'A'/'All')."""
+    if not user or not user.role or not user.role.permissions:
+        return False
+    val = user.role.permissions.get(perm_key)
+    return val is True or val in ('O', 'A', 'All')
+
+def get_user_view_level(user, perm_key: str) -> Optional[str]:
+    """Get the view level for a permission: 'O', 'A', 'All', or None."""
+    if not user or not user.role:
+        return None
+    if user.role.name == ROLE_ADMIN:
+        return 'All'
+    if not user.role.permissions:
+        return None
+    val = user.role.permissions.get(perm_key)
+    if val is True or val == 'All':
+        return 'All'
+    if val == 'O':
+        return 'O'
+    if val == 'A':
+        return 'A'
+    return None
 
 def is_full_access(user) -> bool:
     if not user or not user.role: return False
     if user.role.name == ROLE_ADMIN: return True
-    return user.role.permissions.get('settings-edit') is True
+    return _has_permission(user, 'settings-edit')
 
 def is_team_lead_plus(user) -> bool:
     if not user or not user.role: return False
     if user.role.name in [ROLE_ADMIN, ROLE_TEAM_LEAD]: return True
-    return user.role.permissions.get('report-view') is True or user.role.permissions.get('settings-edit') is True
+    return _has_permission(user, 'report-view') or _has_permission(user, 'settings-edit')
+
+def get_user_role_name(user) -> Optional[str]:
+    return user.role.name if user and user.role else None
 
 def is_employee_only(user) -> bool:
     return get_user_role_name(user) == ROLE_EMPLOYEE
@@ -118,7 +142,9 @@ class RoleChecker:
             return current_user
             
         if self.required_permission and current_user.role and current_user.role.permissions:
-            if current_user.role.permissions.get(self.required_permission) is True:
+            perm_val = current_user.role.permissions.get(self.required_permission)
+            # Accept boolean True or string values ('O', 'A', 'All') as valid permissions
+            if perm_val is True or perm_val in ('O', 'A', 'All'):
                 return current_user
 
         if current_user.role and current_user.role.name in self.allowed_roles:
@@ -194,7 +220,8 @@ class CheckProjectOwner:
             return current_user
 
         if self.required_permission and current_user.role and current_user.role.permissions:
-            if current_user.role.permissions.get(self.required_permission) is True:
+            perm_val = current_user.role.permissions.get(self.required_permission)
+            if perm_val is True or perm_val in ('O', 'A', 'All'):
                 return current_user
 
 
@@ -264,7 +291,8 @@ class CheckTaskOwner:
             return current_user
 
         if self.required_permission and current_user.role and current_user.role.permissions:
-            if current_user.role.permissions.get(self.required_permission) is True:
+            perm_val = current_user.role.permissions.get(self.required_permission)
+            if perm_val is True or perm_val in ('O', 'A', 'All'):
                 return current_user
 
         if current_user.role and current_user.role.name in self.allowed_roles:
@@ -335,7 +363,8 @@ class CheckIssueOwner:
             return current_user
 
         if self.required_permission and current_user.role and current_user.role.permissions:
-            if current_user.role.permissions.get(self.required_permission) is True:
+            perm_val = current_user.role.permissions.get(self.required_permission)
+            if perm_val is True or perm_val in ('O', 'A', 'All'):
                 return current_user
 
         if current_user.role and current_user.role.name in self.allowed_roles:

@@ -132,6 +132,7 @@ def get_projects(
     include_all: bool = False,
     search: Optional[str] = None,
     current_user=None,
+    view_level: Optional[str] = None,
 ) -> dict:
     stmt = select(Project).where(Project.is_deleted == False)
 
@@ -160,22 +161,30 @@ def get_projects(
         from app.models.user import User
         stmt = stmt.join(ProjectMember).join(User).where(User.email == member_email)
 
-    if current_user is not None:
+    if current_user is not None and view_level:
         from sqlalchemy import or_, exists
         from app.models.task import Task, task_assignees
         from app.models.issue import Issue, issue_assignees
 
-        
-        stmt = stmt.outerjoin(ProjectMember, ProjectMember.project_id == Project.id).where(
-            or_(
-                ProjectMember.user_id == current_user.id,
-                Project.owner_id == current_user.id,
-                Project.tasks.any(Task.assignee_id == current_user.id),
-                Project.tasks.any(Task.assignees.any(User.id == current_user.id)),
-                Project.issues.any(Issue.assignee_id == current_user.id),
-                Project.issues.any(Issue.assignees.any(User.id == current_user.id))
+        if view_level == 'O':
+            # Own: only projects where the user is the owner
+            stmt = stmt.where(Project.owner_id == current_user.id)
+        elif view_level == 'A':
+            # Assigned: projects where user is a member, assignee, or owner
+            from app.models.project import ProjectMember
+            from app.models.user import User
+            
+            stmt = stmt.outerjoin(ProjectMember, ProjectMember.project_id == Project.id).where(
+                or_(
+                    ProjectMember.user_id == current_user.id,
+                    Project.owner_id == current_user.id,
+                    Project.tasks.any(Task.assignee_id == current_user.id),
+                    Project.tasks.any(Task.assignees.any(User.id == current_user.id)),
+                    Project.issues.any(Issue.assignee_id == current_user.id),
+                    Project.issues.any(Issue.assignees.any(User.id == current_user.id))
+                )
             )
-        )
+        # 'All' => no extra filter
 
 
     if not include_all:

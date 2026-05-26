@@ -77,13 +77,18 @@ def read_issues(
     current_user=Depends(allow_issue_view),
 ):
 
-    if not is_full_access(current_user):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'issue-view')
+
+    if view_level == 'O':
+        # Own: only issues reported by the user
+        assignee_email = [current_user.email]
+    elif view_level == 'A':
+        # Assigned: issues assigned to user OR issues in projects where user is a member
         if project_id:
             from app.models.project import ProjectMember
             from app.models.issue import Issue
 
-            
-            # Member can see all project issues
             is_member = db.execute(
                 select(ProjectMember).where(
                     ProjectMember.project_id == project_id,
@@ -92,14 +97,12 @@ def read_issues(
             ).first() is not None
             
             if not is_member:
-                # Not a member, but maybe assigned to some issues in this project?
-                # We'll filter by assignee_email in the service
                 assignee_email = [current_user.email]
             else:
                 assignee_email = None
         else:
-            # No project_id, show only assigned issues globally
             assignee_email = [current_user.email]
+    # 'All' => no filtering
 
 
     return issue_service.get_issues(
@@ -127,7 +130,10 @@ def read_issue(
     if db_issue is None:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    if not is_full_access(current_user):
+    from app.core.security import get_user_view_level
+    view_level = get_user_view_level(current_user, 'issue-view')
+
+    if view_level != 'All':
         from app.models.issue import issue_assignees
         
         # Check if user has access: reporter, assignee, or co-assignee
@@ -145,7 +151,7 @@ def read_issue(
             is_co_assignee
         )
         
-        if not has_access:
+        if not has_access and view_level == 'A':
             # Also check if they are a project member
             from app.models.project import ProjectMember
             is_member = db.execute(
@@ -155,11 +161,14 @@ def read_issue(
                 )
             ).first() is not None
             
-            if not is_member:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Access denied: you are not assigned to this issue and not a project member.",
-                )
+            if is_member:
+                has_access = True
+                
+        if not has_access:
+            raise HTTPException(
+                status_code=403,
+                detail="Access denied: you are not assigned to this issue and not a project member.",
+            )
     return db_issue
 
     return db_issue
